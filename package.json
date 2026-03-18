@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "map-hybrid-types-server": "github:OdetteU23/map-hybridi-types",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
