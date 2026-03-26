@@ -1,0 +1,59 @@
+import { FiCalendar, FiUser, FiLogOut } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const isProvider = user?.role === 'provider' || user?.role === 'admin';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  return (
+    <div className="settings-page">
+      <h2 className="settings-page__title">Settings</h2>
+      <p className="settings-page__user">Kirjautunut: <strong>{user?.Firstname || user?.username}</strong> ({user?.role})</p>
+
+      <div className="settings-actions">
+        {isProvider ? (
+          <>
+            <button className="btn btn--dark settings-btn" onClick={() => navigate('/provider')}>
+              <FiCalendar size={18} />
+              Varauspyyntöjen hallintapaneeli
+            </button>
+            <button className="btn btn--light settings-btn" onClick={() => navigate('/provider')}>
+              📊 Tuotteiden hallintapaneeli
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="btn btn--dark settings-btn" onClick={() => navigate('/home')}>
+              <FiCalendar size={18} />
+              Varauspyyntöjjä
+            </button>
+            <button className="btn btn--light settings-btn" onClick={() => navigate('/home')}>
+              Omat tulevat tapahtumien suunnittelu
+            </button>
+          </>
+        )}
+
+        <button className="btn btn--light settings-btn" onClick={() => navigate('/settings')}>
+          <FiUser size={18} />
+          Account
+        </button>
+      </div>
+
+      <div className="settings-logout">
+        <button className="btn btn--dark settings-btn" onClick={handleLogout}>
+          <FiLogOut size={18} />
+          Kirjaudu ulos
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsPage;

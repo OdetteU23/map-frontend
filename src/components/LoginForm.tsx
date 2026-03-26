@@ -1,10 +1,6 @@
 //Login forms components
 import React, { useState } from 'react';
-import type { User } from 'map-hybrid-types-server';
-
-interface LoginFormProps {
-    onLogin: (username: User['username'], password: User['password']) => void;
-}
+import type { LoginFormProps } from '../helpers/types/localTypes';
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     const [username, setUsername] = useState<string>('');
@@ -15,20 +11,29 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
-            />
-            <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-            />
-            <button type="submit">Login</button>
+        <form className="form-section" onSubmit={handleSubmit}>
+            <span className="form-section__title">Sign in</span>
+            <div className="form-group">
+                <label>Username:</label>
+                <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username ..."
+                />
+            </div>
+            <div className="form-group">
+                <label>Password:</label>
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password here"
+                />
+            </div>
+            <div className="form-actions">
+                <button type="submit" className="btn btn--dark">Submit</button>
+            </div>
         </form>
     );
 };

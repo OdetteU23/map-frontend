@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import type { User } from 'map-hybrid-types-server';
-
-interface RegisterFormProps {
-    onRegister: (Firstname: string, Lastname: string, email: User['email'], username: User['username'], password: User['password']) => void;
-}
+import type { RegisterFormProps } from '../helpers/types/localTypes';
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
     const [Firstname, setFirstname] = useState<string>('');
@@ -17,38 +13,55 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <input
-                type="text"
-                value={Firstname}
-                onChange={(e) => setFirstname(e.target.value)}
-                placeholder="First Name"
-            />
-            <input
-                type="text"
-                value={Lastname}
-                onChange={(e) => setLastname(e.target.value)}
-                placeholder="Last Name"
-            />
-            <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-            />
-            <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
-            />
-            <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-            />
-            <button type="submit">Register</button>
+        <form className="form-section" onSubmit={handleSubmit}>
+            <div className="form-group">
+                <label>First name:</label>
+                <input
+                    type="text"
+                    value={Firstname}
+                    onChange={(e) => setFirstname(e.target.value)}
+                    placeholder="Enter your name ..."
+                />
+            </div>
+            <div className="form-group">
+                <label>Last name:</label>
+                <input
+                    type="text"
+                    value={Lastname}
+                    onChange={(e) => setLastname(e.target.value)}
+                    placeholder="Enter your last name ..."
+                />
+            </div>
+            <div className="form-group">
+                <label>Email:</label>
+                <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email ..."
+                />
+            </div>
+            <div className="form-group">
+                <label>username:</label>
+                <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username ..."
+                />
+            </div>
+            <div className="form-group">
+                <label>Password:</label>
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password ..."
+                />
+            </div>
+            <div className="form-actions">
+                <button type="submit" className="btn btn--dark">Submit</button>
+            </div>
         </form>
     );
 };
