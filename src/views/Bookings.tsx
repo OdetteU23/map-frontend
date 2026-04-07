@@ -1,14 +1,16 @@
 import BookingsComponents from '../components/Bookings';
 import PaymentsComponents from '../components/PaymentsComp';
+import useBookings from '../hooks/useBookings';
+import usePayments from '../hooks/usePayments';
 
 const BookingsPage: React.FC = () => {
+  const { bookings, handleBookingClick } = useBookings();
+  const { payments, handlePaymentClick } = usePayments();
+
   return (
     <div className="bookings-page">
-      <BookingsComponents />
-      <PaymentsComponents       id={0} booking_id={0} user_id={any} amount={0} currency={''} 
-      payment_method={'credit_card'} payment_status={'pending'} payment_provider={''} transaction_id={''} 
-      created_at={new Date()} />
-
+      <BookingsComponents bookings={bookings} onBookingClick={handleBookingClick} />
+      <PaymentsComponents payments={payments} onPaymentClick={handlePaymentClick} />
     </div>
   );
 };

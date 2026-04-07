@@ -1,20 +1,30 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 import { useAuth } from '../context/AuthContext';
+import { isUser } from '../helpers/types/localTypes';
 
 type UserType = 'normal' | 'business';
 
 const AuthPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const isLoginView = searchParams.get('view') === 'login';
   const [userType, setUserType] = useState<UserType>('normal');
-  const { isLoading, error, clearError } = useAuth();
+  const { user, isLoading, error, clearError, loginSuccess, registerSuccess } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (username: string, _password: string | number) => {
-    // Backend integration: call your login API here, then on success call
-    // loginSuccess(userData) from useAuth and navigate based on user.role
-    navigate('/home');
+  const handleLogin = async (username: string, password: string | number) => {
+    try {
+      await loginSuccess({ username, password });
+      if (isUser(user)) {
+        navigate(user.role === 'provider' || user.role === 'admin' ? '/provider' : '/home');
+      } else {
+        navigate('/home');
+      }
+    } catch {
+      // Error is already set in AuthContext; stay on auth page
+    }
   };
 
   const handleRegister = async (
@@ -22,13 +32,15 @@ const AuthPage: React.FC = () => {
     Lastname: string,
     email: string,
     username: string,
-    _password: string | number
+    password: string | number
   ) => {
-    // Backend integration: call your register API here with
-    // role = userType === 'business' ? 'provider' : 'consumer'
-    // then on success call registerSuccess(userData) from useAuth and navigate
-    const role = userType === 'business' ? 'provider' as const : 'consumer' as const;
-    navigate(role === 'provider' ? '/provider' : '/home');
+    try {
+      const role = userType === 'business' ? 'provider' : 'consumer';
+      await registerSuccess({ Firstname, Lastname, email, username, password, role });
+      navigate(role === 'provider' ? '/provider' : '/home');
+    } catch {
+      // Error is already set in AuthContext; stay on auth page
+    }
   };
 
   return (
@@ -40,29 +52,44 @@ const AuthPage: React.FC = () => {
         </div>
       )}
 
-      {/* User type tabs */}
-      <div className="auth-tabs">
-        <button
-          className={`auth-tabs__btn ${userType === 'normal' ? 'auth-tabs__btn--active' : 'auth-tabs__btn--inactive'}`}
-          onClick={() => setUserType('normal')}
-        >
-          Normal user registry
-        </button>
-        <button
-          className={`auth-tabs__btn ${userType === 'business' ? 'auth-tabs__btn--active' : 'auth-tabs__btn--inactive'}`}
-          onClick={() => setUserType('business')}
-        >
-          Business owner registery
-        </button>
-      </div>
+      {isLoading && <div className="auth-loading">Loading...</div>}
 
-      {isLoading && <div className="auth-loading">Ladataan...</div>}
+      {!isLoginView && (
+        <>
+          <h2 className="auth-page__heading">Create an account</h2>
+          {/* User type tabs */}
+          <div className="auth-tabs">
+            <button
+              className={`auth-tabs__btn ${userType === 'normal' ? 'auth-tabs__btn--active' : 'auth-tabs__btn--inactive'}`}
+              onClick={() => setUserType('normal')}
+            >
+              Normal user
+            </button>
+            <button
+              className={`auth-tabs__btn ${userType === 'business' ? 'auth-tabs__btn--active' : 'auth-tabs__btn--inactive'}`}
+              onClick={() => setUserType('business')}
+            >
+              Business owner
+            </button>
+          </div>
+          <RegisterForm onRegister={handleRegister} />
+          <p className="auth-page__switch">
+            Already have an account?{' '}
+            <button className="auth-page__link" onClick={() => navigate('/auth?view=login')}>Sign in</button>
+          </p>
+        </>
+      )}
 
-      {/* Register form */}
-      <RegisterForm onRegister={handleRegister} />
-
-      {/* Login form */}
-      <LoginForm onLogin={handleLogin} />
+      {isLoginView && (
+        <>
+          <h2 className="auth-page__heading">Sign in</h2>
+          <LoginForm onLogin={handleLogin} />
+          <p className="auth-page__switch">
+            Don't have an account?{' '}
+            <button className="auth-page__link" onClick={() => navigate('/auth')}>Register</button>
+          </p>
+        </>
+      )}
     </div>
   );
 };

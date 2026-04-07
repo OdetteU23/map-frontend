@@ -1,4 +1,4 @@
-import { FiStar } from 'react-icons/fi';
+import { FiStar, FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
 import type { SpaceCardProps } from '../helpers/types/localTypes';
 
 function StarRating({ count }: { count: number }) {
@@ -16,7 +16,7 @@ function StarRating({ count }: { count: number }) {
   );
 }
 
-const SpaceCard: React.FC<SpaceCardProps> = ({ space, listing, ownerName, rating, reviewText, image, onClick }) => {
+const SpaceCard: React.FC<SpaceCardProps> = ({ space, listing, ownerName, rating, reviewText, image, onClick, onEdit, onDelete, canEdit, canDelete }) => {
   const availability = listing?.availability === 'available' ? 'Saatavilla nyt' : listing?.availability ?? '';
 
   return (
@@ -47,6 +47,36 @@ const SpaceCard: React.FC<SpaceCardProps> = ({ space, listing, ownerName, rating
             <span className="product-card__rating-text">{reviewText}</span>
           )}
         </div>
+        {onClick && (
+          <button
+            className="btn btn--dark btn--small product-card__view"
+            onClick={(e) => { e.stopPropagation(); onClick(space.id); }}
+          >
+            <FiEye size={14} /> Katso tiedot
+          </button>
+        )}
+        {(canEdit || canDelete) && (
+          <div className="product-card__actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            {canEdit && (
+              <button
+                className="btn btn--small btn--light"
+                title="Muokkaa tilaa"
+                onClick={(e) => { e.stopPropagation(); onEdit?.(space.id); }}
+              >
+                <FiEdit2 size={16} /> Muokkaa
+              </button>
+            )}
+            {canDelete && (
+              <button
+                className="btn btn--small btn--danger"
+                title="Poista tila"
+                onClick={(e) => { e.stopPropagation(); onDelete?.(space.id); }}
+              >
+                <FiTrash2 size={16} /> Poista
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );

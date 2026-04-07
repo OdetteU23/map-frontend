@@ -1,59 +1,129 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import type { User } from 'map-hybrid-types-server';
-
-type AuthUser = Pick<User, 'id' | 'Firstname' | 'Lastname' | 'username' | 'email' | 'role'>;
-
-type AuthContextType = {
-  user: AuthUser | null;
-  isLoggedIn: boolean;
-  isLoading: boolean;
-  error: string | null;
-  loginSuccess: (authenticatedUser: AuthUser) => void;
-  registerSuccess: (newUser: AuthUser) => void;
-  setLoading: (loading: boolean) => void;
-  setAuthError: (msg: string | null) => void;
-  logout: () => void;
-  clearError: () => void;
-};
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useContext, useEffect } from 'react';
+import type { AuthContextType, MainUserProviderProps, LoginData, RegisterData } from '../helpers/types/localTypes';
+import type { User, ServiceProviderProfile } from 'map-hybrid-types-server';
+import { api } from '../helpers/data/fetchData';
+import type { AuthResponse } from '../helpers/data/fetchData';
 
 const AuthContext = createContext<AuthContextType | null>(null);
+const UserContext = createContext<User | ServiceProviderProfile | null>(null);
 
-export const useAuth = (): AuthContextType => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-};
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+const AuthProvider = ({ children }: MainUserProviderProps) => {
+  const [user, setUser] = useState<User | ServiceProviderProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Called after a successful backend login – pass the authenticated user data
-  const loginSuccess = useCallback((authenticatedUser: AuthUser) => {
-    setUser(authenticatedUser);
-    setError(null);
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const nowUser = await api.auth.getNowUser();
+          setUser(nowUser);
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        localStorage.removeItem('authToken');
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  // Called after a successful backend register – pass the new user data
-  const registerSuccess = useCallback((newUser: AuthUser) => {
-    setUser(newUser);
-    setError(null);
-  }, []);
+  const loginSuccess = async (loginData: LoginData) => {
+    try {
+      const response: AuthResponse = await api.auth.Login(loginData);
+      // Use the user returned by the login response directly — no second API call needed
+      setUser(response.user as User);
+      setIsAuthenticated(true);
+      setError(null);
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError(err instanceof Error ? err.message : 'Login failed');
+      setIsAuthenticated(false);
+      setUser(null);
+      throw err;
+    }
+  };
 
-  const setLoading = useCallback((loading: boolean) => setIsLoading(loading), []);
-  const setAuthError = useCallback((msg: string | null) => setError(msg), []);
+  const registerSuccess = async (registerData: RegisterData) => {
+    try {
+      const response: AuthResponse = await api.auth.Register(registerData);
+      // Use the user returned by the register response directly — no second API call needed
+      setUser(response.user as User);
+      setIsAuthenticated(true);
+      setError(null);
+    } catch (err) {
+      console.error('Register failed:', err);
+      setError(err instanceof Error ? err.message : 'Registration failed');
+      setIsAuthenticated(false);
+      setUser(null);
+      throw err;
+    }
+  };
 
-  const logout = useCallback(() => {
-    setUser(null);
-    setError(null);
-  }, []);
+  const logout = async () => {
+    try {
+      api.auth.Logout();
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
 
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = () => setError(null);
+
+  const editUser = (updatedData: Partial<User | ServiceProviderProfile>) => {
+    if (user) {
+      setUser({ ...user, ...updatedData });
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    isLoggedIn: isAuthenticated,
+    isLoading,
+    error,
+    loginSuccess,
+    registerSuccess,
+    logout: () => { logout(); },
+    clearError,
+    editUser,
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, error, loginSuccess, registerSuccess, setLoading, setAuthError, logout, clearError }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      <UserContext.Provider value={user}>
+        {children}
+      </UserContext.Provider>
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export { AuthContext, AuthProvider, UserContext };

@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useParams } from 'react-router-dom'
 import './App.css'
 import Layout from './components/Layout'
 import LandingPage from './views/LandingPage'
@@ -10,6 +10,15 @@ import SettingsPage from './views/SettingsPage'
 import ProviderHome from './views/ProviderHome'
 import SpaceDetail from './views/SpaceDetail'
 import BookingsPage from './views/Bookings'
+import ImageUploadPage from './views/imageUpload'
+import CreateSpacePage from './views/CreateSpacePage'
+import EditSpacePage from './views/EditSpacePage'
+import NotificationsPage from './views/NotificationsPage'
+
+const ImageUploadWrapper = () => {
+  const { id } = useParams<{ id: string }>();
+  return <ImageUploadPage listingId={id ? Number(id) : undefined} />;
+};
 
 function App() {
   return (
@@ -22,8 +31,13 @@ function App() {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/provider" element={<ProviderHome />} />
+        <Route path="/provider/create" element={<CreateSpacePage />} />
+        <Route path="/provider/edit/:id" element={<EditSpacePage />} />
         <Route path="/space/:id" element={<SpaceDetail />} />
         <Route path="/bookings" element={<BookingsPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/upload/:id" element={<ImageUploadWrapper />} />
+        <Route path="/upload" element={<CreateSpacePage />} />
       </Route>
     </Routes>
   )

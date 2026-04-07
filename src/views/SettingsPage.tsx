@@ -1,11 +1,12 @@
 import { FiCalendar, FiUser, FiLogOut } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { isUser, getUserDisplayName } from '../helpers/types/localTypes';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const isProvider = user?.role === 'provider' || user?.role === 'admin';
+  const isProvider = isUser(user) && (user.role === 'provider' || user.role === 'admin');
 
   const handleLogout = () => {
     logout();
@@ -15,7 +16,7 @@ const SettingsPage: React.FC = () => {
   return (
     <div className="settings-page">
       <h2 className="settings-page__title">Settings</h2>
-      <p className="settings-page__user">Kirjautunut: <strong>{user?.Firstname || user?.username}</strong> ({user?.role})</p>
+      <p className="settings-page__user">Kirjautunut: <strong>{getUserDisplayName(user)}</strong> ({isUser(user) ? user.role : 'provider'})</p>
 
       <div className="settings-actions">
         {isProvider ? (

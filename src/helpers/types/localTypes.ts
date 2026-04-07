@@ -1,6 +1,7 @@
-import type { User, Space, Listing, ListingImages, Message, Review, Bookings, Category } from 'map-hybrid-types-server';
+import type { User, ServiceProviderProfile, Space, Listing, ListingImages, Message, Review, Bookings, Category } from 'map-hybrid-types-server';
+import type { ReactNode } from 'react';
 
-// ===== Auth Form Props =====
+//  Auth Form Props 
 type LoginFormProps = {
     onLogin: (username: User['username'], password: User['password']) => void;
 }
@@ -9,18 +10,51 @@ type RegisterFormProps = {
     onRegister: (Firstname: string, Lastname: string, email: User['email'], username: User['username'], password: User['password']) => void;
 }
 
-// ===== Space / Listing Display =====
+// API data types 
+type LoginData = {
+    username: User['username'];
+    password: User['password'];
+};
+
+type RegisterData = {
+    Firstname: string;
+    Lastname: string;
+    email: User['email'];
+    username: User['username'];
+    password: User['password'];
+    role?: 'consumer' | 'provider';
+};
+
+type AuthUser = Pick<User, 'id' | 'Firstname' | 'Lastname' | 'username' | 'email' | 'role' | 'password'>;
+type AuthContextType = {
+  user: User | ServiceProviderProfile | null;
+  isLoggedIn: boolean;
+  isLoading: boolean;
+  error: string | null;
+  loginSuccess: (loginData: LoginData) => Promise<void>;
+  registerSuccess: (registerData: RegisterData) => Promise<void>;
+  logout: () => void;
+  clearError: () => void;
+  editUser: (updatedData: Partial<User | ServiceProviderProfile>) => void;
+};
+
+
+//  Space / Listing Display 
 type SpaceCardProps = {
-    space: Pick<Space, 'id' | 'title' | 'location' | 'price_per_hour'>;
+    space: Pick<Space, 'id' | 'title' | 'location' | 'price_per_hour'> & { owner_id?: number };
     listing?: Pick<Listing, 'availability'>;
     ownerName: User['username'];
     rating: Review['rating'];
     reviewText?: string;
     image?: ListingImages['image_url'];
     onClick?: (spaceId: Space['id']) => void;
+    onEdit?: (spaceId: Space['id']) => void;
+    onDelete?: (spaceId: Space['id']) => void;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
-// ===== Messages =====
+//  Messages 
 type MessageThread = {
     id: Message['id'];
     otherUser: Pick<User, 'id' | 'username'>;
@@ -29,30 +63,67 @@ type MessageThread = {
     unreadCount: number;
 }
 
-// ===== Bookings =====
+//  Bookings 
 type BookingDisplay = Pick<Bookings, 'id' | 'start_time' | 'end_time' | 'status'> & {
     spaceTitle: Space['title'];
     spaceLocation: Space['location'];
 }
 
-// ===== Settings =====
+//  Settings 
 type SettingsPageProps = {
     userRole: User['role'];
 }
 
-// ===== Search =====
+//  Search 
 type SearchFilters = {
     query: string;
     category?: Category['id'];
     maxPrice?: Space['price_per_hour'];
 }
+interface MainUserProviderProps {
+  children: ReactNode;
+}
+
+// Type guard: check if user is a User (has username/role) vs ServiceProviderProfile
+function isUser(u: User | ServiceProviderProfile | null | undefined): u is User {
+  return u != null && 'username' in u;
+}
+
+// Safe accessor for display name from the union
+function getUserDisplayName(u: User | ServiceProviderProfile | null | undefined): string {
+  if (!u) return '';
+  if ('Firstname' in u) return u.Firstname || u.username;
+  return u.business_name || '';
+}
+type ImageUploadingProps = {
+  onUpload: (files: File[]) => void;
+  maxFiles?: number;
+  acceptedFormats?: string;
+  isUploading?: boolean;
+}
+type UseImageUploadOptions = {
+  listingId?: number;
+  maxFiles?: number;
+  onUploadComplete?: () => void;
+}
 
 export type {
     LoginFormProps,
     RegisterFormProps,
+    LoginData,
+    RegisterData,
     SpaceCardProps,
     MessageThread,
     BookingDisplay,
     SettingsPageProps,
     SearchFilters,
+    AuthUser,
+    AuthContextType,
+    MainUserProviderProps,
+    ImageUploadingProps,
+    UseImageUploadOptions
+
+
 };
+
+export { isUser, getUserDisplayName };
