@@ -1239,10 +1239,21 @@
   gap: 2px;
   margin-bottom: 0.75rem;
 }
+.space-detail__pricing {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
 .space-detail__price {
   font-size: 1.2rem;
   font-weight: 700;
-  margin: 0 0 0.5rem;
+  margin: 0;
+}
+.space-detail__price--daily {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--usx-text-secondary);
 }
 .space-detail__owner {
   color: var(--usx-text-muted);
@@ -1261,6 +1272,283 @@
   text-align: center;
   margin-top: 3rem;
   color: var(--usx-text-muted);
+}
+
+/* ===== Booking Card ===== */
+.booking-card {
+  background: var(--usx-bg);
+  border: 1px solid var(--usx-border-light);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  max-width: 400px;
+}
+
+.booking-card__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.booking-card__total-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.booking-card__total-price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.booking-card__mode-toggle {
+  display: flex;
+  border: 1px solid var(--usx-border-light);
+  border-radius: var(--usx-radius-sm);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.booking-card__mode-btn {
+  flex: 1;
+  padding: 0.55rem 0.5rem;
+  border: none;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--usx-font-body);
+  cursor: pointer;
+  color: var(--usx-text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.booking-card__mode-btn:first-child {
+  border-right: 1px solid var(--usx-border-light);
+}
+
+.booking-card__mode-btn--active {
+  background: var(--usx-accent);
+  color: var(--usx-text);
+}
+
+.booking-card__mode-btn:hover:not(.booking-card__mode-btn--active) {
+  background: rgba(161, 207, 224, 0.2);
+}
+
+.booking-card__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--usx-border);
+  border-radius: var(--usx-radius-sm);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.booking-card__field {
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.booking-card__field--left {
+  border-right: 1px solid var(--usx-border);
+}
+
+.booking-card__field-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--usx-text);
+}
+
+.booking-card__input {
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  font-family: var(--usx-font-body);
+  color: var(--usx-text);
+  background: transparent;
+  padding: 0;
+  width: 100%;
+}
+
+.booking-card__input::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+}
+
+.booking-card__price-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--usx-text);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--usx-border-light);
+}
+
+.booking-card__submit {
+  width: 100%;
+  padding: 0.9rem;
+  border: none;
+  border-radius: var(--usx-radius-sm);
+  background: linear-gradient(135deg, var(--usx-accent), #6fb3ce);
+  color: var(--usx-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.booking-card__submit:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.booking-card__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.booking-card__note {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--usx-text-secondary);
+  margin: 0.75rem 0 0;
+}
+
+.booking-card__message {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.65rem;
+  border: 1px solid var(--usx-border-light);
+  border-radius: var(--usx-radius-sm);
+  background: transparent;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: var(--usx-text);
+  transition: background 0.15s;
+}
+
+.booking-card__message:hover {
+  background: var(--usx-btn-light-bg);
+}
+
+/* ===== Booking Success Popup ===== */
+.booking-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  animation: popupFadeIn 0.2s ease;
+}
+
+.booking-popup {
+  position: relative;
+  background: var(--usx-bg);
+  border-radius: var(--usx-radius-sm);
+  padding: 2rem 1.5rem;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  animation: popupSlideUp 0.3s ease;
+}
+
+.booking-popup__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--usx-text-secondary);
+  line-height: 1;
+}
+
+.booking-popup__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: var(--usx-accent);
+  color: #fff;
+  font-size: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.booking-popup__title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--usx-text);
+}
+
+.booking-popup__details {
+  text-align: left;
+  background: var(--usx-surface, #f5f5f5);
+  border-radius: var(--usx-radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.booking-popup__details p {
+  margin: 0;
+}
+
+.booking-popup__btn {
+  width: 100%;
+  padding: 0.7rem;
+  border: none;
+  border-radius: var(--usx-radius-sm);
+  background: var(--usx-accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: opacity 0.15s;
+}
+
+.booking-popup__btn:hover {
+  opacity: 0.9;
+}
+
+.booking-popup__btn--secondary {
+  background: transparent;
+  color: var(--usx-text);
+  border: 1px solid var(--usx-border-light);
+}
+
+.booking-popup__btn--secondary:hover {
+  background: var(--usx-btn-light-bg);
+  opacity: 1;
+}
+
+@keyframes popupFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popupSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== Upload Page ===== */

@@ -15,7 +15,7 @@ const SearchPage: React.FC = () => {
       try {
         const data = await api.media.fetchSpaces();
         const mapped: SpaceCardProps[] = data.map((s) => ({
-          space: { id: s.id, title: s.title, location: s.location, price_per_hour: s.price_per_hour },
+          space: { id: s.id, title: s.title, location: s.location, price_per_hour: s.price_per_hour, price_per_day: 'price_per_day' in s ? (s as Record<string, unknown>).price_per_day as number : undefined },
           ownerName: '',
           rating: 0,
         }));

@@ -10,6 +10,7 @@ export type SpaceFormData = {
   location: string;
   capacity: string;
   price_per_hour: string;
+  price_per_day: string;
   category_id: string;
 };
 
@@ -19,6 +20,7 @@ const emptyForm: SpaceFormData = {
   location: '',
   capacity: '',
   price_per_hour: '',
+  price_per_day: '',
   category_id: '',
 };
 
@@ -61,6 +63,7 @@ const useCreateSpace = () => {
         location: form.location.trim(),
         capacity: Number(form.capacity) || 1,
         price_per_hour: Number(form.price_per_hour),
+        ...(form.price_per_day ? { price_per_day: Number(form.price_per_day) } : {}),
       });
       setCreatedSpaceId(space.id);
       return space.id;

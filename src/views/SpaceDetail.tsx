@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiStar, FiMessageSquare, FiCalendar } from 'react-icons/fi';
+import { FiArrowLeft, FiStar, FiMessageSquare } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../helpers/data/fetchData';
+import type { Bookings } from 'map-hybrid-types-server';
 
 type SpaceDetailData = {
-  title: string; location: string; price_per_hour: number;
+  title: string; location: string; price_per_hour: number; price_per_day?: number;
   ownerName: string; rating: number; description: string; images: string[];
 };
 
@@ -22,10 +23,30 @@ function StarRating({ count }: { count: number }) {
 const SpaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const [space, setSpace] = useState<SpaceDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
+  const [bookingStatus, setBookingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState<Bookings | null>(null);
+  const [bookingMode, setBookingMode] = useState<'hours' | 'days'>('hours');
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingHours, setBookingHours] = useState(1);
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+
+  const pricePerDay = space?.price_per_day || (space ? space.price_per_hour * 24 : 0);
+
+  const dayCount = checkIn && checkOut
+    ? Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const totalPrice = space
+    ? bookingMode === 'hours'
+      ? space.price_per_hour * bookingHours
+      : pricePerDay * dayCount
+    : 0;
 
   useEffect(() => {
     if (!id) return;
@@ -44,6 +65,7 @@ const SpaceDetail: React.FC = () => {
           title: data.title,
           location: data.location,
           price_per_hour: data.price_per_hour,
+          price_per_day: 'price_per_day' in data ? (data as Record<string, unknown>).price_per_day as number : undefined,
           ownerName: '',
           rating: 0,
           description: data.description || '',
@@ -109,31 +131,181 @@ const SpaceDetail: React.FC = () => {
         <p className="space-detail__location">{space.location}</p>
         <StarRating count={space.rating} />
 
-        <p className="space-detail__price">{space.price_per_hour} € / tunti</p>
+        <div className="space-detail__pricing">
+          <p className="space-detail__price">{space.price_per_hour} € / tunti</p>
+          <p className="space-detail__price space-detail__price--daily">{(space.price_per_day || space.price_per_hour * 24).toFixed(0)} € / päivä</p>
+        </div>
 
         <p className="space-detail__owner">Omistaja: {space.ownerName}</p>
 
         <p className="space-detail__desc">{space.description}</p>
 
-        <div className="space-detail__actions">
+        <div className="booking-card">
           {isLoggedIn ? (
             <>
-              <button className="btn btn--dark" onClick={() => {
-                // Backend integration: call your booking API here
-              }}>
-                <FiCalendar size={16} /> Varaa tila
+              <div className="booking-card__header">
+                <span className="booking-card__total-label">Yhteensä</span>
+                <span className="booking-card__total-price">
+                  {totalPrice.toFixed(0)} €
+                </span>
+              </div>
+
+              <div className="booking-card__mode-toggle">
+                <button
+                  className={`booking-card__mode-btn ${bookingMode === 'hours' ? 'booking-card__mode-btn--active' : ''}`}
+                  onClick={() => setBookingMode('hours')}
+                >
+                  Tunneittain
+                </button>
+                <button
+                  className={`booking-card__mode-btn ${bookingMode === 'days' ? 'booking-card__mode-btn--active' : ''}`}
+                  onClick={() => setBookingMode('days')}
+                >
+                  Päivittäin
+                </button>
+              </div>
+
+              {bookingMode === 'hours' ? (
+                <>
+                  <div className="booking-card__fields">
+                    <div className="booking-card__field booking-card__field--left">
+                      <span className="booking-card__field-label">ALOITUSAIKA</span>
+                      <input
+                        type="datetime-local"
+                        className="booking-card__input"
+                        value={bookingDate}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="booking-card__field booking-card__field--right">
+                      <span className="booking-card__field-label">KESTO (TUNTIA)</span>
+                      <input
+                        type="number"
+                        className="booking-card__input"
+                        min={1}
+                        max={24}
+                        value={bookingHours}
+                        onChange={(e) => setBookingHours(Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="booking-card__price-row">
+                    <span>{space.price_per_hour} € × {bookingHours} tunti{bookingHours > 1 ? 'a' : ''}</span>
+                    <span>{(space.price_per_hour * bookingHours).toFixed(0)} €</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="booking-card__fields">
+                    <div className="booking-card__field booking-card__field--left">
+                      <span className="booking-card__field-label">SISÄÄNKIRJAUTUMINEN</span>
+                      <input
+                        type="date"
+                        className="booking-card__input"
+                        value={checkIn}
+                        onChange={(e) => {
+                          setCheckIn(e.target.value);
+                          if (checkOut && e.target.value >= checkOut) setCheckOut('');
+                        }}
+                      />
+                    </div>
+                    <div className="booking-card__field booking-card__field--right">
+                      <span className="booking-card__field-label">ULOSKIRJAUTUMINEN</span>
+                      <input
+                        type="date"
+                        className="booking-card__input"
+                        value={checkOut}
+                        min={checkIn || undefined}
+                        onChange={(e) => setCheckOut(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {dayCount > 0 && (
+                    <div className="booking-card__price-row">
+                      <span>{pricePerDay.toFixed(0)} € × {dayCount} päivä{dayCount > 1 ? 'ä' : ''}</span>
+                      <span>{(pricePerDay * dayCount).toFixed(0)} €</span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <button
+                className="booking-card__submit"
+                disabled={
+                  bookingStatus === 'loading' ||
+                  (bookingMode === 'hours' && !bookingDate) ||
+                  (bookingMode === 'days' && (!checkIn || !checkOut))
+                }
+                onClick={async () => {
+                  if (!user || !id) return;
+                  setBookingStatus('loading');
+                  try {
+                    let startTime: Date;
+                    let endTime: Date;
+                    if (bookingMode === 'hours') {
+                      if (!bookingDate) return;
+                      startTime = new Date(bookingDate);
+                      endTime = new Date(startTime.getTime() + bookingHours * 60 * 60 * 1000);
+                    } else {
+                      if (!checkIn || !checkOut) return;
+                      startTime = new Date(checkIn);
+                      endTime = new Date(checkOut);
+                    }
+                    const result = await api.media.createBooking({
+                      space_id: Number(id),
+                      user_id: user.id as Bookings['user_id'],
+                      start_time: startTime,
+                      end_time: endTime,
+                      status: 'pending',
+                    });
+                    setConfirmedBooking(result);
+                    setBookingStatus('success');
+                    setShowSuccessPopup(true);
+                  } catch (err) {
+                    console.error('Booking failed:', err);
+                    setBookingStatus('error');
+                  }
+                }}
+              >
+                {bookingStatus === 'loading' ? 'Varataan...' :
+                 bookingStatus === 'success' ? 'Varattu!' :
+                 bookingStatus === 'error' ? 'Varaus epäonnistui' : 'Varaa'}
               </button>
-              <button className="btn btn--light" onClick={() => navigate('/messages')}>
+
+              <p className="booking-card__note">Sinua veloitetaan varauksen vahvistamisen jälkeen</p>
+
+              <button className="booking-card__message" onClick={() => navigate('/messages')}>
                 <FiMessageSquare size={16} /> Lähetä viesti
               </button>
             </>
           ) : (
-            <button className="btn btn--dark" onClick={() => navigate('/auth')}>
+            <button className="booking-card__submit" onClick={() => navigate('/auth')}>
               Kirjaudu sisään varataksesi
             </button>
           )}
         </div>
       </div>
+
+      {showSuccessPopup && confirmedBooking && (
+        <div className="booking-popup-overlay" onClick={() => setShowSuccessPopup(false)}>
+          <div className="booking-popup" onClick={(e) => e.stopPropagation()}>
+            <button className="booking-popup__close" onClick={() => setShowSuccessPopup(false)}>×</button>
+            <div className="booking-popup__icon">✓</div>
+            <h3 className="booking-popup__title">Varauspyyntö lähetetty onnistuneesti!</h3>
+            <div className="booking-popup__details">
+              <p><strong>Tila:</strong> {space.title}</p>
+              <p><strong>Alkaa:</strong> {new Date(confirmedBooking.start_time).toLocaleString('fi-FI')}</p>
+              <p><strong>Päättyy:</strong> {new Date(confirmedBooking.end_time).toLocaleString('fi-FI')}</p>
+              <p><strong>Yhteensä:</strong> {totalPrice.toFixed(0)} €</p>
+              <p><strong>Tila:</strong> Odottaa hyväksyntää</p>
+            </div>
+            <button className="booking-popup__btn" onClick={() => navigate('/bookings')}>Näytä varaukset</button>
+            <button className="booking-popup__btn booking-popup__btn--secondary" onClick={() => setShowSuccessPopup(false)}>Sulje</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

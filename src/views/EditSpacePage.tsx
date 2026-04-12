@@ -12,6 +12,7 @@ type SpaceFormData = {
   location: string;
   capacity: string;
   price_per_hour: string;
+  price_per_day: string;
   category_id: string;
 };
 
@@ -25,6 +26,7 @@ const EditSpacePage: React.FC = () => {
     location: '',
     capacity: '',
     price_per_hour: '',
+    price_per_day: '',
     category_id: '',
   });
   const [categories, setCategories] = useState<Category[]>([]);
@@ -54,6 +56,7 @@ const EditSpacePage: React.FC = () => {
           location: space.location || '',
           capacity: String(space.capacity || ''),
           price_per_hour: String(space.price_per_hour || ''),
+          price_per_day: String('price_per_day' in space ? (space as Record<string, unknown>).price_per_day || '' : ''),
           category_id: space.category_id ? String(space.category_id) : '',
         });
       } catch (err) {
@@ -87,6 +90,7 @@ const EditSpacePage: React.FC = () => {
         location: form.location.trim(),
         capacity: Number(form.capacity) || 1,
         price_per_hour: Number(form.price_per_hour),
+        ...(form.price_per_day ? { price_per_day: Number(form.price_per_day) } : {}),
         category_id: form.category_id ? Number(form.category_id) : undefined,
       });
       navigate('/provider');
@@ -171,6 +175,19 @@ const EditSpacePage: React.FC = () => {
               onChange={(e) => updateField('price_per_hour', e.target.value)}
               placeholder="0.00"
               required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="es-price-day">Hinta / päivä (€)</label>
+            <input
+              id="es-price-day"
+              type="number"
+              min="0"
+              step="1"
+              value={form.price_per_day}
+              onChange={(e) => updateField('price_per_day', e.target.value)}
+              placeholder="0.00"
             />
           </div>
         </div>

@@ -31,7 +31,7 @@ const SpaceCard: React.FC<SpaceCardProps> = ({ space, listing, ownerName, rating
       <div className="product-card__details">
         <div className="product-card__row">
           <span className="product-card__name">{space.title}</span>
-          <span className="product-card__price">Hinta:{space.price_per_hour}€</span>
+          <span className="product-card__price">{space.price_per_hour}€/h · {(space.price_per_day || space.price_per_hour * 24).toFixed(0)}€/pv</span>
         </div>
         <div className="product-card__row">
           <p className="product-card__info"><span>Saatavilla:</span></p>

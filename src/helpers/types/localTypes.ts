@@ -41,7 +41,7 @@ type AuthContextType = {
 
 //  Space / Listing Display 
 type SpaceCardProps = {
-    space: Pick<Space, 'id' | 'title' | 'location' | 'price_per_hour'> & { owner_id?: number };
+    space: Pick<Space, 'id' | 'title' | 'location' | 'price_per_hour'> & { owner_id?: number; price_per_day?: number };
     listing?: Pick<Listing, 'availability'>;
     ownerName: User['username'];
     rating: Review['rating'];

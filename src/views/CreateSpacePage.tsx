@@ -106,6 +106,19 @@ const CreateSpacePage: React.FC = () => {
               required
             />
           </div>
+
+          <div className="form-group">
+            <label htmlFor="cs-price-day">Hinta / päivä (€)</label>
+            <input
+              id="cs-price-day"
+              type="number"
+              min="0"
+              step="1"
+              value={space.form.price_per_day}
+              onChange={(e) => space.updateField('price_per_day', e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
         </div>
 
         {space.categories.length > 0 && (

@@ -15,7 +15,7 @@ const ProviderHome: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const mapSpaces = async (data: { id: number; owner_id?: number | string; title: string; location: string; price_per_hour: number }[], ownerName = ''): Promise<SpaceCardProps[]> => {
+  const mapSpaces = async (data: { id: number; owner_id?: number | string; title: string; location: string; price_per_hour: number; price_per_day?: number }[], ownerName = ''): Promise<SpaceCardProps[]> => {
     return Promise.all(
       data.map(async (s) => {
         let image: string | undefined;
@@ -26,7 +26,7 @@ const ProviderHome: React.FC = () => {
           }
         } catch { /* no images yet */ }
         return {
-          space: { id: s.id, title: s.title, location: s.location, price_per_hour: s.price_per_hour, owner_id: typeof s.owner_id === 'number' ? s.owner_id : undefined },
+          space: { id: s.id, title: s.title, location: s.location, price_per_hour: s.price_per_hour, price_per_day: s.price_per_day, owner_id: typeof s.owner_id === 'number' ? s.owner_id : undefined },
           ownerName,
           rating: 0,
           image,
