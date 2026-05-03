@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ImageUploading } from '../components/upload';
 import useImageGallery from '../hooks/useImageGallery';
-import useImageUpload from '../hooks/useImageUpload';
 import { api } from '../helpers/data/fetchData';
 import type { ListingImages } from 'map-hybrid-types-server';
 
@@ -28,12 +27,6 @@ const ImageUploadPage: React.FC<ImageUploadPageProps> = ({ listingId }) => {
   }, [listingId, refreshKey]);
 
   const gallery = useImageGallery();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const uploader = useImageUpload({
-    listingId,
-    maxFiles: 5,
-    onUploadComplete: () => setRefreshKey((k) => k + 1),
-  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

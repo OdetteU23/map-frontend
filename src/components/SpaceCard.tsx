@@ -1,23 +1,24 @@
-import { FiStar, FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
+import { type FC } from 'react';
+import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
 import type { SpaceCardProps } from '../helpers/types/localTypes';
+import StarRating from './StarRating';
 
-function StarRating({ count }: { count: number }) {
-  return (
-    <div className="product-card__rating-box">
-      {[1, 2, 3, 4].map((i) => (
-        <FiStar
-          key={i}
-          size={16}
-          fill={i <= count ? '#000' : 'none'}
-          stroke="#000"
-        />
-      ))}
-    </div>
-  );
-}
-
-const SpaceCard: React.FC<SpaceCardProps> = ({ space, listing, ownerName, rating, reviewText, image, onClick, onEdit, onDelete, canEdit, canDelete }) => {
+const SpaceCard: FC<SpaceCardProps> = ({
+  space,
+  listing,
+  ownerName,
+  rating,
+  reviewText,
+  image,
+  onClick,
+  onEdit,
+  onDelete,
+  canEdit,
+  canDelete,
+}) => {
   const availability = listing?.availability === 'available' ? 'Saatavilla nyt' : listing?.availability ?? '';
+  const averageRating = Number(rating) || 0;
+  const roundedRating = Math.round(averageRating);
 
   return (
     <article className="product-card" onClick={() => onClick?.(space.id)} style={{ cursor: onClick ? 'pointer' : undefined }}>
@@ -42,10 +43,13 @@ const SpaceCard: React.FC<SpaceCardProps> = ({ space, listing, ownerName, rating
           <p className="product-card__info"><span>Osoite:{space.location}</span></p>
         </div>
         <div className="product-card__rating">
-          <StarRating count={Number(rating)} />
-          {reviewText && (
-            <span className="product-card__rating-text">{reviewText}</span>
-          )}
+          <StarRating
+            value={roundedRating}
+            className="product-card__rating-stars"
+          />
+          <span className="product-card__rating-text">
+            {reviewText || 'Ei arvioita vielä'}
+          </span>
         </div>
         {onClick && (
           <button

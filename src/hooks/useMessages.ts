@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { MessageThread } from '../helpers/types/localTypes';
 import { isUser } from '../helpers/types/localTypes';
 import { useAuth } from '../context/AuthContext';
@@ -53,6 +55,7 @@ const buildThreads = (
 
 const useMessages = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<MessageTab>('inbox');
   const [openThread, setOpenThread] = useState<MessageThread | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -61,6 +64,7 @@ const useMessages = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [newRecipient, setNewRecipient] = useState('');
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<number>>(new Set());
   const [deletedIds, setDeletedIds] = useState<Set<number>>(new Set());
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -89,13 +93,29 @@ const useMessages = () => {
     return () => { cancelled = true; };
   }, [user, myId]);
 
+  useEffect(() => {
+    try {
+      const st = (location && (location as any).state) || undefined;
+      if (!st?.recipientId) return;
+
+      const timer = window.setTimeout(() => {
+        setNewRecipient(String(st.recipientId));
+        setActiveTab('inbox');
+        setIsComposeOpen(true);
+      }, 0);
+
+      return () => window.clearTimeout(timer);
+    } catch {
+      // ignore
+    }
+  }, [location]);
+
   const activeMessages = rawMessages.filter((m) => !deletedIds.has(m.id));
 
-  // Build threads for current tab
-  const inboxThreads = buildThreads(activeMessages, myId, 'inbox', readIds);
-  const sentThreads = buildThreads(activeMessages, myId, 'sent', readIds);
+  // Inbox shows sent messages only; Sent shows received messages.
+  const inboxThreads = buildThreads(activeMessages, myId, 'sent', readIds);
+  const sentThreads = buildThreads(activeMessages, myId, 'inbox', readIds);
 
-  // Deleted messages as threads
   const deletedMessages = rawMessages.filter((m) => deletedIds.has(m.id));
   const deletedThreads = buildThreads(deletedMessages, myId, 'inbox', readIds)
     .concat(buildThreads(deletedMessages, myId, 'sent', readIds));
@@ -104,18 +124,27 @@ const useMessages = () => {
     activeTab === 'inbox' ? inboxThreads :
     activeTab === 'sent' ? sentThreads :
     activeTab === 'deleted' ? deletedThreads :
-    []; // drafts handled separately
+    [];
+
+  const openCompose = useCallback(() => {
+    setIsComposeOpen(true);
+  }, []);
+
+  const closeCompose = useCallback(() => {
+    setIsComposeOpen(false);
+  }, []);
 
   const switchTab = useCallback((tab: MessageTab) => {
     setActiveTab(tab);
     setOpenThread(null);
     setMessages([]);
+    setIsComposeOpen(false);
   }, []);
 
   const openConversation = (thread: MessageThread) => {
     setOpenThread(thread);
+    setIsComposeOpen(false);
 
-    // Mark all messages in this thread as read
     const threadMsgIds = rawMessages
       .filter((m) =>
         (m.sender_id === thread.otherUser.id && m.receiver_id === myId) ||
@@ -128,7 +157,6 @@ const useMessages = () => {
       return next;
     });
 
-    // Load conversation messages
     const convoMsgs = rawMessages
       .filter((m) =>
         (m.sender_id === thread.otherUser.id || m.receiver_id === thread.otherUser.id) &&
@@ -177,7 +205,6 @@ const useMessages = () => {
     });
   };
 
-  // Draft management
   const saveDraft = () => {
     if (!input.trim() || !newRecipient.trim()) return;
     const draft: Draft = {
@@ -189,6 +216,7 @@ const useMessages = () => {
     setDrafts((prev) => [...prev, draft]);
     setInput('');
     setNewRecipient('');
+    setIsComposeOpen(false);
   };
 
   const deleteDraft = (draftId: number) => {
@@ -199,7 +227,7 @@ const useMessages = () => {
     setNewRecipient(draft.recipientId);
     setInput(draft.content);
     setDrafts((prev) => prev.filter((d) => d.id !== draft.id));
-    setActiveTab('inbox'); // switch to compose view
+    setIsComposeOpen(true);
   };
 
   const sendMessage = () => {
@@ -241,6 +269,7 @@ const useMessages = () => {
           created_at: new Date(),
         };
         setRawMessages((prev) => [...prev, sentMsg]);
+        setIsComposeOpen(false);
       })
       .catch(console.error);
   };
@@ -257,9 +286,12 @@ const useMessages = () => {
     messages,
     input,
     newRecipient,
+    isComposeOpen,
     isLoading,
     error,
     switchTab,
+    openCompose,
+    closeCompose,
     openConversation,
     closeConversation,
     deleteThread,

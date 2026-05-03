@@ -5,6 +5,8 @@ import type { SpaceCardProps } from '../helpers/types/localTypes';
 import { useAuth } from '../context/AuthContext';
 import { getUserDisplayName } from '../helpers/types/localTypes';
 import { api } from '../helpers/data/fetchData';
+import type { Review } from 'map-hybrid-types-server';
+import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
 
 const UserHome: React.FC = () => {
   const { user } = useAuth();
@@ -18,16 +20,25 @@ const UserHome: React.FC = () => {
         const mapped: SpaceCardProps[] = await Promise.all(
           data.map(async (s) => {
             let image: string | undefined;
+            let reviews: Review[] = [];
             try {
-              const images = await api.upload.fetchImagesByListing(s.id);
+              const [images, fetchedReviews] = await Promise.all([
+                api.upload.fetchImagesByListing(s.id),
+                api.media.fetchReviews(s.id),
+              ]);
+              reviews = fetchedReviews;
               if (images.length > 0) {
                 image = api.getUploadUrl(images[0].image_url);
               }
-            } catch { /* no images yet */ }
+            } catch {
+              // keep the card visible even if images or reviews fail
+            }
+
             return {
               space: { id: s.id, title: s.title, location: s.location, price_per_hour: s.price_per_hour },
               ownerName: '',
-              rating: 0,
+              rating: calculateAverageReviewRating(reviews),
+              reviewText: formatReviewSummary(reviews),
               image,
             };
           })
@@ -37,6 +48,7 @@ const UserHome: React.FC = () => {
         console.error('Failed to load spaces:', err);
       }
     };
+
     loadSpaces();
   }, []);
 

@@ -4,6 +4,8 @@ import { FiSearch } from 'react-icons/fi';
 import SpaceCard from '../components/SpaceCard';
 import type { SpaceCardProps } from '../helpers/types/localTypes';
 import { api } from '../helpers/data/fetchData';
+import type { Review } from 'map-hybrid-types-server';
+import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
 
 const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -14,29 +16,68 @@ const SearchPage: React.FC = () => {
     const loadSpaces = async () => {
       try {
         const data = await api.media.fetchSpaces();
-        const mapped: SpaceCardProps[] = data.map((s) => ({
-          space: { id: s.id, title: s.title, location: s.location, price_per_hour: s.price_per_hour, price_per_day: 'price_per_day' in s ? (s as Record<string, unknown>).price_per_day as number : undefined },
-          ownerName: '',
-          rating: 0,
-        }));
+        const mapped: SpaceCardProps[] = await Promise.all(
+          data.map(async (s) => {
+            let image: string | undefined;
+            let reviews: Review[] = [];
+
+            try {
+              const [images, fetchedReviews] = await Promise.all([
+                api.upload.fetchImagesByListing(s.id),
+                api.media.fetchReviews(s.id),
+              ]);
+              reviews = fetchedReviews;
+
+              if (images.length > 0) {
+                image = api.getUploadUrl(images[0].image_url);
+              }
+            } catch {
+              // keep the card visible even if images or reviews fail
+            }
+
+            return {
+              space: {
+                id: s.id,
+                title: s.title,
+                location: s.location,
+                price_per_hour: s.price_per_hour,
+                price_per_day: 'price_per_day' in s ? (s as Record<string, unknown>).price_per_day as number : undefined,
+              },
+              ownerName: '',
+              rating: calculateAverageReviewRating(reviews),
+              reviewText: formatReviewSummary(reviews),
+              image,
+            };
+          })
+        );
+
         setSpaces(mapped);
 
-        // Fetching the first image for each space
+        // Preserve a second pass for image hydration if some requests failed earlier
         const withImages = await Promise.all(
           mapped.map(async (card) => {
+            if (card.image) {
+              return card;
+            }
+
             try {
               const imgs = await api.upload.fetchImagesByListing(card.space.id);
-              return { ...card, image: imgs.length > 0 ? api.getUploadUrl(imgs[0].image_url) : undefined };
+              return {
+                ...card,
+                image: imgs.length > 0 ? api.getUploadUrl(imgs[0].image_url) : undefined,
+              };
             } catch {
               return card;
             }
           })
         );
+
         setSpaces(withImages);
       } catch (err) {
         console.error('Failed to load spaces:', err);
       }
     };
+
     loadSpaces();
   }, []);
 

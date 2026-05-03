@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import SpaceCard from '../components/SpaceCard';
 import type { SpaceCardProps } from '../helpers/types/localTypes';
 import { getUserDisplayName, isUser } from '../helpers/types/localTypes';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../helpers/data/fetchData';
+import type { Review } from 'map-hybrid-types-server';
+import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
 
 type Tab = 'all' | 'mine';
 
@@ -14,21 +17,33 @@ const ProviderHome: React.FC = () => {
   const [mySpaces, setMySpaces] = useState<SpaceCardProps[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const mapSpaces = async (data: { id: number; owner_id?: number | string; title: string; location: string; price_per_hour: number; price_per_day?: number }[], ownerName = ''): Promise<SpaceCardProps[]> => {
     return Promise.all(
       data.map(async (s) => {
         let image: string | undefined;
+        let reviews: Review[] = [];
+
         try {
-          const images = await api.upload.fetchImagesByListing(s.id);
+          const [images, fetchedReviews] = await Promise.all([
+            api.upload.fetchImagesByListing(s.id),
+            api.media.fetchReviews(s.id),
+          ]);
+          reviews = fetchedReviews;
+
           if (images.length > 0) {
             image = api.getUploadUrl(images[0].image_url);
           }
-        } catch { /* no images yet */ }
+        } catch {
+          // keep cards visible even if review or image loading fails
+        }
+
         return {
           space: { id: s.id, title: s.title, location: s.location, price_per_hour: s.price_per_hour, price_per_day: s.price_per_day, owner_id: typeof s.owner_id === 'number' ? s.owner_id : undefined },
           ownerName,
-          rating: 0,
+          rating: calculateAverageReviewRating(reviews),
+          reviewText: formatReviewSummary(reviews),
           image,
         };
       })
@@ -61,6 +76,21 @@ const ProviderHome: React.FC = () => {
     };
     loadMySpaces();
   }, [user]);
+
+  // If navigated here with state or query to open 'mine' tab, honor it
+  useEffect(() => {
+    try {
+      const stateTab = (location && (location as any).state && (location as any).state.tab) as string | undefined;
+      const searchTab = new URLSearchParams(location.search).get('tab');
+      if (stateTab === 'mine' || searchTab === 'mine') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab('mine');
+      }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (e) {
+      // ignore
+    }
+  }, [location]);
 
   const spaces = activeTab === 'all' ? allSpaces : mySpaces;
 

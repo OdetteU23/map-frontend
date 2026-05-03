@@ -1,7 +1,17 @@
 // Pure presentational component — all logic lives in useMessages hook
 import React from 'react';
-import { FiMessageSquare, FiArrowLeft, FiSend, FiInbox, FiNavigation, FiFile, FiTrash2, FiRotateCcw } from 'react-icons/fi';
-//import { getUserDisplayName } from '../helpers/types/localTypes';
+import {
+  FiArrowLeft,
+  FiFile,
+  FiInbox,
+  FiMessageSquare,
+  FiNavigation,
+  FiRotateCcw,
+  FiSend,
+  FiTrash2,
+  FiX,
+} from 'react-icons/fi';
+import { FaPencilAlt } from 'react-icons/fa';
 import type { MessageThread } from '../helpers/types/localTypes';
 import type { User, ServiceProviderProfile } from 'map-hybrid-types-server';
 import type { ChatMessage, MessageTab, Draft } from '../hooks/useMessages';
@@ -22,6 +32,7 @@ type MessagesProps = {
   messages: ChatMessage[];
   input: string;
   newRecipient: string;
+  isComposeOpen: boolean;
   isLoading?: boolean;
   error?: string | null;
   onSwitchTab: (tab: MessageTab) => void;
@@ -29,6 +40,8 @@ type MessagesProps = {
   onCloseConversation: () => void;
   onDeleteThread: (thread: MessageThread) => void;
   onRestoreThread: (thread: MessageThread) => void;
+  onOpenCompose: () => void;
+  onCloseCompose: () => void;
   onSendMessage: () => void;
   onSaveDraft: () => void;
   onDeleteDraft: (draftId: number) => void;
@@ -46,6 +59,7 @@ const MessagesComp: React.FC<MessagesProps> = ({
   messages,
   input,
   newRecipient,
+  isComposeOpen,
   isLoading,
   error,
   onSwitchTab,
@@ -53,6 +67,8 @@ const MessagesComp: React.FC<MessagesProps> = ({
   onCloseConversation,
   onDeleteThread,
   onRestoreThread,
+  onOpenCompose,
+  onCloseCompose,
   onSendMessage,
   onSaveDraft,
   onDeleteDraft,
@@ -61,14 +77,84 @@ const MessagesComp: React.FC<MessagesProps> = ({
   onNewRecipientChange,
   formatDate,
 }) => {
-  // Content for the right panel
+  const showComposeButton = activeTab === 'inbox' || activeTab === 'sent';
+
+  const renderComposeModal = () => {
+    if (!isComposeOpen) {
+      return null;
+    }
+
+    return (
+      <div className="compose-modal-overlay" onClick={onCloseCompose}>
+        <div className="compose-modal" onClick={(event) => event.stopPropagation()}>
+          <div className="compose-modal__header">
+            <div>
+              <p className="compose-modal__eyebrow">Kirjoittaa uusi viesti</p>
+              <h3 className="compose-modal__title">Uusi viesti</h3>
+            </div>
+            <button
+              type="button"
+              className="compose-modal__close"
+              onClick={onCloseCompose}
+              aria-label="Close compose popup"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          <div className="compose-section">
+            <input
+              className="compose-section__recipient"
+              type="text"
+              placeholder="Vastaanottajan ID"
+              value={newRecipient}
+              onChange={(e) => onNewRecipientChange(e.target.value)}
+            />
+            <div className="compose-section__body">
+              <textarea
+                className="compose-section__textarea"
+                placeholder="Kirjoita viesti..."
+                value={input}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    onSendMessage();
+                  }
+                }}
+              />
+              <div className="compose-section__actions">
+                <button
+                  type="button"
+                  className="chat-input__send"
+                  onClick={onSendMessage}
+                  disabled={!input.trim() || !newRecipient.trim()}
+                >
+                  <FiSend size={20} />
+                </button>
+                <button
+                  type="button"
+                  className="msg-draft-btn"
+                  onClick={onSaveDraft}
+                  disabled={!input.trim() || !newRecipient.trim()}
+                  title="Save as draft"
+                >
+                  <FiFile size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
-    // Conversation view
     if (openThread) {
       return (
         <div className="msg-content msg-content--chat">
           <div className="chat-header">
-            <button className="chat-header__back" onClick={onCloseConversation}>
+            <button type="button" className="chat-header__back" onClick={onCloseConversation}>
               <FiArrowLeft size={20} />
             </button>
             <span className="chat-header__name">{openThread.otherUser.username}</span>
@@ -93,7 +179,7 @@ const MessagesComp: React.FC<MessagesProps> = ({
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onSendMessage()}
             />
-            <button className="chat-input__send" onClick={onSendMessage} disabled={!input.trim()}>
+            <button type="button" className="chat-input__send" onClick={onSendMessage} disabled={!input.trim()}>
               <FiSend size={20} />
             </button>
           </div>
@@ -103,52 +189,15 @@ const MessagesComp: React.FC<MessagesProps> = ({
 
     return (
       <div className="msg-content">
-        {/* Compose new message (inbox & sent) */}
-        {(activeTab === 'inbox' || activeTab === 'sent') && (
-          <div className="compose-section">
-            <h3 className="compose-section__title">Uusi viesti</h3>
-            <input
-              className="compose-section__recipient"
-              type="text"
-              placeholder="Vastaanottajan ID"
-              value={newRecipient}
-              onChange={(e) => onNewRecipientChange(e.target.value)}
-            />
-            <div className="compose-section__body">
-              <textarea
-                className="compose-section__textarea"
-                placeholder="Kirjoita viesti..."
-                value={input}
-                onChange={(e) => onInputChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    onSendMessage();
-                  }
-                }}
-              />
-              <div className="compose-section__actions">
-                <button
-                  className="chat-input__send"
-                  onClick={onSendMessage}
-                  disabled={!input.trim() || !newRecipient.trim()}
-                >
-                  <FiSend size={20} />
-                </button>
-                <button
-                  className="msg-draft-btn"
-                  onClick={onSaveDraft}
-                  disabled={!input.trim() || !newRecipient.trim()}
-                  title="Save as draft"
-                >
-                  <FiFile size={18} />
-                </button>
-              </div>
-            </div>
+        {showComposeButton && (
+          <div className="compose-launch">
+            <button type="button" className="compose-launch__btn" onClick={onOpenCompose}>
+              <FaPencilAlt size={14} />
+              Kirjoittaa uusi viesti
+            </button>
           </div>
         )}
 
-        {/* Drafts tab content */}
         {activeTab === 'drafts' && (
           <div className="messages-list">
             {drafts.length === 0 ? (
@@ -167,10 +216,15 @@ const MessagesComp: React.FC<MessagesProps> = ({
                     <p className="message-item__preview">{draft.content}</p>
                   </div>
                   <div className="message-item__actions">
-                    <button className="message-item__action-btn" onClick={() => onEditDraft(draft)} title="Edit">
+                    <button type="button" className="message-item__action-btn" onClick={() => onEditDraft(draft)} title="Edit">
                       <FiSend size={16} />
                     </button>
-                    <button className="message-item__action-btn message-item__action-btn--danger" onClick={() => onDeleteDraft(draft.id)} title="Delete">
+                    <button
+                      type="button"
+                      className="message-item__action-btn message-item__action-btn--danger"
+                      onClick={() => onDeleteDraft(draft.id)}
+                      title="Delete"
+                    >
                       <FiTrash2 size={16} />
                     </button>
                   </div>
@@ -180,7 +234,6 @@ const MessagesComp: React.FC<MessagesProps> = ({
           </div>
         )}
 
-        {/* Thread list for inbox / sent / deleted */}
         {activeTab !== 'drafts' && (
           <div className="messages-list">
             {isLoading ? (
@@ -200,6 +253,7 @@ const MessagesComp: React.FC<MessagesProps> = ({
                   className={`message-item ${thread.unreadCount > 0 ? 'message-item--unread' : ''}`}
                 >
                   <button
+                    type="button"
                     className="message-item__clickable"
                     onClick={() => onOpenConversation(thread)}
                   >
@@ -221,11 +275,16 @@ const MessagesComp: React.FC<MessagesProps> = ({
                   </button>
                   <div className="message-item__actions">
                     {activeTab === 'deleted' ? (
-                      <button className="message-item__action-btn" onClick={() => onRestoreThread(thread)} title="Restore">
+                      <button type="button" className="message-item__action-btn" onClick={() => onRestoreThread(thread)} title="Restore">
                         <FiRotateCcw size={16} />
                       </button>
                     ) : (
-                      <button className="message-item__action-btn message-item__action-btn--danger" onClick={() => onDeleteThread(thread)} title="Delete">
+                      <button
+                        type="button"
+                        className="message-item__action-btn message-item__action-btn--danger"
+                        onClick={() => onDeleteThread(thread)}
+                        title="Delete"
+                      >
                         <FiTrash2 size={16} />
                       </button>
                     )}
@@ -241,17 +300,15 @@ const MessagesComp: React.FC<MessagesProps> = ({
 
   return (
     <div className="messages-page">
-      {/* Centered page header */}
       <h1 className="messages-page__header">Viestit</h1>
 
-      {/* Sidebar + Content below header */}
       <div className="messages-page__body">
-        {/* Left sidebar: tabs */}
         <aside className="msg-sidebar">
           <nav className="msg-tabs">
             {TAB_CONFIG.map((tab) => (
               <button
                 key={tab.key}
+                type="button"
                 className={`msg-tabs__btn ${activeTab === tab.key ? 'msg-tabs__btn--active' : 'msg-tabs__btn--inactive'}`}
                 onClick={() => onSwitchTab(tab.key)}
               >
@@ -262,9 +319,10 @@ const MessagesComp: React.FC<MessagesProps> = ({
           </nav>
         </aside>
 
-        {/* Right content panel */}
         {renderContent()}
       </div>
+
+      {renderComposeModal()}
     </div>
   );
 };

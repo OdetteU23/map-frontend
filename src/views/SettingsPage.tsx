@@ -21,27 +21,29 @@ const SettingsPage: React.FC = () => {
       <div className="settings-actions">
         {isProvider ? (
           <>
-            <button className="btn btn--dark settings-btn" onClick={() => navigate('/provider')}>
+            <button className="btn btn--dark settings-btn" onClick={() => navigate('/bookings')}>
               <FiCalendar size={18} />
               Varauspyyntöjen hallintapaneeli
             </button>
-            <button className="btn btn--light settings-btn" onClick={() => navigate('/provider')}>
+            <button className="btn btn--light settings-btn" onClick={() => navigate('/provider', { state: { tab: 'mine' } })}>
               📊 Tuotteiden hallintapaneeli
             </button>
           </>
         ) : (
           <>
-            <button className="btn btn--dark settings-btn" onClick={() => navigate('/home')}>
+            <button className="btn btn--dark settings-btn" onClick={() => navigate('/bookings')}>
               <FiCalendar size={18} />
-              Varauspyyntöjjä
+              Varauspyyntöjä
             </button>
+            {/*
             <button className="btn btn--light settings-btn" onClick={() => navigate('/home')}>
               Omat tulevat tapahtumien suunnittelu
             </button>
+            */}
           </>
         )}
 
-        <button className="btn btn--light settings-btn" onClick={() => navigate('/settings')}>
+        <button className="btn btn--light settings-btn" onClick={() => navigate('/account')}>
           <FiUser size={18} />
           Account
         </button>

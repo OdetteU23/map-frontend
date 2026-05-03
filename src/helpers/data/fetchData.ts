@@ -7,6 +7,7 @@ const AUTH_API = import.meta.env.VITE_AUTH_API || 'http://localhost:3000/api';
 const MEDIA_API = import.meta.env.VITE_MEDIA_API || 'http://localhost:3001/api';
 const UPLOAD_API = import.meta.env.VITE_UPLOAD_API || 'http://localhost:3002/api';
 const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:3002/uploads';
+const PAYMENT_API = import.meta.env.VITE_PAYMENT_API || 'http://localhost:3003/api';
 
 const getAuthToken = (): string | null => {
     return localStorage.getItem('authToken');
@@ -101,7 +102,7 @@ const authApi = {
 
     // Fetch the current user's payments history — backend: GET /payments/history/:username
     fetchPaymentsHistory: async (username: string): Promise<Payment[]> => {
-        return fetching<Payment[]>(AUTH_API, `/payments/history/${encodeURIComponent(username)}`, {
+        return fetching<Payment[]>(PAYMENT_API, `/payments/history/${encodeURIComponent(username)}`, {
             method: 'GET',
         });
     },
@@ -123,35 +124,42 @@ const authApi = {
         localStorage.setItem('authToken', response.accessToken);
         return response;
     },
-    //Payment processing — backend: POST /payments/process
+    //Payment intent creation — backend: POST /payments/create-intent
+    createPaymentIntent: async (paymentData: { amount: number; currency?: string; booking_id: number; user_id: number; payment_method?: string }): Promise<{ clientSecret: string; payment: Payment }> => {
+        return fetching<{ clientSecret: string; payment: Payment }>(PAYMENT_API, '/payments/create-intent', {
+            method: 'POST',
+            body: JSON.stringify(paymentData),
+        });
+    },
+    //Payment processing — backend: POST /payments/create-intent (legacy alias)
     createPayment: async (paymentData: Partial<Payment>): Promise<Payment> => {
-        return fetching<Payment>(AUTH_API, '/payments/process', {
+        return fetching<Payment>(PAYMENT_API, '/payments/create-intent', {
             method: 'POST',
             body: JSON.stringify(paymentData),
         });
     },
     getPaymentToken: async (paymentData: Partial<Payment>): Promise<TokenMessages> => {
-        return fetching<TokenMessages>(AUTH_API, '/payments/process', {
+        return fetching<TokenMessages>(PAYMENT_API, '/payments/create-intent', {
             method: 'POST',
             body: JSON.stringify(paymentData),
         });
     },
     // backend: PUT /payments/update/:id
-    updatePayemntStatus: async (paymentId: number, status: string): Promise<Payment> => {
-        return fetching<Payment>(AUTH_API, `/payments/update/${paymentId}`, {
+    updatePaymentStatus: async (paymentId: number, status: string): Promise<Payment> => {
+        return fetching<Payment>(PAYMENT_API, `/payments/update/${paymentId}`, {
             method: 'PUT',
-            body: JSON.stringify({ status }),
+            body: JSON.stringify({ payment_status: status }),
         });
     },
     // backend: POST /payments/cancel/:id
     cancelPayment: async (paymentId: number): Promise<Payment> => {
-        return fetching<Payment>(AUTH_API, `/payments/cancel/${paymentId}`, {
+        return fetching<Payment>(PAYMENT_API, `/payments/cancel/${paymentId}`, {
             method: 'POST',
         });
     },
     // backend: POST /payments/refund/:id
     refundPayment: async (paymentId: number): Promise<Payment> => {
-        return fetching<Payment>(AUTH_API, `/payments/refund/${paymentId}`, {
+        return fetching<Payment>(PAYMENT_API, `/payments/refund/${paymentId}`, {
             method: 'POST',
         });
     },
@@ -214,7 +222,7 @@ const mediaApi = {
             body: JSON.stringify(messageData),
         });
     },
-    // backend: GET /bookings/:id  (individual booking by id)
+    // backend: GET /bookings (list bookings)
     fetchBookings: async (): Promise<Bookings[]> => {
         return fetching<Bookings[]>(MEDIA_API, '/bookings', {
             method: 'GET',
@@ -252,10 +260,29 @@ const mediaApi = {
             method: 'GET',
         });
     },
-    // backend: GET /reviews/fetch/:spaceName
-    fetchReviews: async (spaceName: string): Promise<Review[]> => {
-        return fetching<Review[]>(MEDIA_API, `/reviews/fetch/${encodeURIComponent(spaceName)}`, {
+    // backend: POST /notifications/  (create a notification for a user)
+    createNotification: async (notificationData: Partial<Notification>): Promise<Notification> => {
+        return fetching<Notification>(MEDIA_API, '/notifications', {
+            method: 'POST',
+            body: JSON.stringify(notificationData),
+        });
+    },
+    // backend: GET /reviews/fetch/:spaceId
+    fetchReviews: async (spaceId: number): Promise<Review[]> => {
+        return fetching<Review[]>(MEDIA_API, `/reviews/fetch/${spaceId}`, {
             method: 'GET',
+        });
+    },
+    //Reviews/ratings
+    addReview: async (reviewData: {
+        user_id: Review['user_id'];
+        space_id: Review['space_id'];
+        rating: Review['rating'];
+        comment: Review['comment'];
+    }): Promise<Review> => {
+        return fetching<Review>(MEDIA_API, '/reviews/add', {
+            method: 'POST',
+            body: JSON.stringify(reviewData),
         });
     },
     // backend: PUT /reviews/edit/:id

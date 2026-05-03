@@ -1,4 +1,4 @@
-import type { User, ServiceProviderProfile, Space, Listing, ListingImages, Message, Review, Bookings, Category } from 'map-hybrid-types-server';
+import type { User, Payment, ServiceProviderProfile, Space, Listing, ListingImages, Message, Review, Bookings, Category, Notification } from 'map-hybrid-types-server';
 import type { ReactNode } from 'react';
 
 //  Auth Form Props 
@@ -15,6 +15,11 @@ type LoginData = {
     username: User['username'];
     password: User['password'];
 };
+
+//Payment types
+type PaymentsComponentsProps = {
+  payments: Payment[];
+}
 
 type RegisterData = {
     Firstname: string;
@@ -83,7 +88,11 @@ type SearchFilters = {
 interface MainUserProviderProps {
   children: ReactNode;
 }
-
+type localNotification = Pick<Notification, 'id' | 'type' | 'content' | 'is_read' | 'created_at'> & {
+  senderName: string;
+  senderId: number;
+  reiceiverId: number;
+};
 // Type guard: check if user is a User (has username/role) vs ServiceProviderProfile
 function isUser(u: User | ServiceProviderProfile | null | undefined): u is User {
   return u != null && 'username' in u;
@@ -121,8 +130,9 @@ export type {
     AuthContextType,
     MainUserProviderProps,
     ImageUploadingProps,
-    UseImageUploadOptions
-
+    UseImageUploadOptions,
+    PaymentsComponentsProps,
+    localNotification,
 
 };
 

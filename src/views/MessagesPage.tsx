@@ -11,9 +11,12 @@ const MessagesPage: React.FC = () => {
     messages,
     input,
     newRecipient,
+    isComposeOpen,
     isLoading,
     error,
     switchTab,
+    openCompose,
+    closeCompose,
     openConversation,
     closeConversation,
     deleteThread,
@@ -37,11 +40,14 @@ const MessagesPage: React.FC = () => {
       messages={messages}
       input={input}
       newRecipient={newRecipient}
+      isComposeOpen={isComposeOpen}
       isLoading={isLoading}
       error={error}
       onSwitchTab={switchTab}
       onOpenConversation={openConversation}
       onCloseConversation={closeConversation}
+      onOpenCompose={openCompose}
+      onCloseCompose={closeCompose}
       onDeleteThread={deleteThread}
       onRestoreThread={restoreThread}
       onSendMessage={sendMessage}

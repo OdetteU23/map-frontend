@@ -1,30 +1,33 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiStar, FiMessageSquare } from 'react-icons/fi';
+import { FiArrowLeft, FiMessageSquare } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import { isUser, getUserDisplayName } from '../helpers/types/localTypes';
 import { api } from '../helpers/data/fetchData';
-import type { Bookings } from 'map-hybrid-types-server';
+import type { Bookings, Review } from 'map-hybrid-types-server';
+import StarRating from '../components/StarRating';
+import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
 
 type SpaceDetailData = {
-  title: string; location: string; price_per_hour: number; price_per_day?: number;
-  ownerName: string; rating: number; description: string; images: string[];
+  id: number;
+  title: string;
+  location: string;
+  price_per_hour: number;
+  price_per_day?: number;
+  ownerName: string;
+  ownerEmail?: string;
+  ownerId?: number;
+  description: string;
+  images: string[];
 };
-
-function StarRating({ count }: { count: number }) {
-  return (
-    <div className="space-detail__stars">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <FiStar key={i} size={20} fill={i <= count ? '#000' : 'none'} stroke="#000" />
-      ))}
-    </div>
-  );
-}
 
 const SpaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
   const [space, setSpace] = useState<SpaceDetailData | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -35,39 +38,69 @@ const SpaceDetail: React.FC = () => {
   const [bookingHours, setBookingHours] = useState(1);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
 
+  const averageReviewRating = calculateAverageReviewRating(reviews);
+  const reviewSummary = formatReviewSummary(reviews);
   const pricePerDay = space?.price_per_day || (space ? space.price_per_hour * 24 : 0);
 
   const dayCount = checkIn && checkOut
     ? Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  const totalPrice = space
-    ? bookingMode === 'hours'
-      ? space.price_per_hour * bookingHours
-      : pricePerDay * dayCount
-    : 0;
+  const hourlyTotalPrice = space ? space.price_per_hour * bookingHours : 0;
+  const dailyTotalPrice = space ? pricePerDay * dayCount : 0;
+  const totalPrice = bookingMode === 'hours' ? hourlyTotalPrice : dailyTotalPrice;
 
   useEffect(() => {
     if (!id) return;
+
     const loadSpace = async () => {
       try {
         const data = await api.media.fetchSpaceById(Number(id));
 
-        // Fetch all images for this space
         let images: string[] = [];
         try {
           const imgs = await api.upload.fetchImagesByListing(Number(id));
           images = imgs.map((img) => api.getUploadUrl(img.image_url));
-        } catch { /* no images */ }
+        } catch {
+          // no images yet
+        }
+
+        let ownerName = '';
+        let ownerEmail = '';
+        const ownerId = (data as any).owner_id ?? (data as any).ownerId;
+        if ((data as any).owner) {
+          const o = (data as any).owner;
+          ownerName = o.username || o.Firstname || o.business_name || ownerName;
+          ownerEmail = o.email || ownerEmail;
+        }
+        ownerName = ownerName || (data as any).owner_name || (data as any).owner_username || '';
+        ownerEmail = ownerEmail || (data as any).owner_email || (data as any).ownerEmail || '';
+
+        const possibleUsername = (data as any).owner_username || (data as any).owner_name || (data as any).owner?.username;
+        if (!ownerEmail && possibleUsername) {
+          try {
+            const ownerProfile = await api.user.fetchUserProfile(possibleUsername);
+            ownerEmail = ownerProfile.email || ownerEmail;
+            ownerName = ownerName || ownerProfile.username || ownerProfile.Firstname || '';
+          } catch {
+            // ignore profile fetch failures
+          }
+        }
 
         setSpace({
+          id: Number(id),
           title: data.title,
           location: data.location,
           price_per_hour: data.price_per_hour,
           price_per_day: 'price_per_day' in data ? (data as Record<string, unknown>).price_per_day as number : undefined,
-          ownerName: '',
-          rating: 0,
+          ownerName,
+          ownerEmail,
+          ownerId,
           description: data.description || '',
           images,
         });
@@ -77,8 +110,83 @@ const SpaceDetail: React.FC = () => {
         setLoading(false);
       }
     };
+
     loadSpace();
   }, [id]);
+
+  useEffect(() => {
+    setSelectedRating(0);
+    setReviewError(null);
+    setReviewSuccess(null);
+  }, [id]);
+
+  useEffect(() => {
+    if (!space?.title) {
+      setReviews([]);
+      return;
+    }
+
+    const loadReviews = async () => {
+      try {
+        const fetchedReviews = await api.media.fetchReviews(space.id);
+        setReviews(fetchedReviews);
+      } catch (err) {
+        console.error('Failed to load reviews:', err);
+        setReviews([]);
+      }
+    };
+
+    loadReviews();
+  }, [space?.title]);
+
+  const handleReviewRatingChange = (nextRating: number) => {
+    setSelectedRating(nextRating);
+    setReviewError(null);
+    setReviewSuccess(null);
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!space) {
+      return;
+    }
+
+    if (!user || !isUser(user)) {
+      setReviewError('Kirjaudu sisään jättääksesi arvion.');
+      return;
+    }
+
+    if (selectedRating < 1) {
+      setReviewError('Valitse vähintään yksi tähti.');
+      return;
+    }
+
+    setIsReviewSubmitting(true);
+    setReviewError(null);
+    setReviewSuccess(null);
+
+    try {
+      await api.media.addReview({
+        user_id: user.id,
+        space_id: space.id,
+        rating: selectedRating,
+        comment: '',
+      });
+
+      const updatedReviews = await api.media.fetchReviews(space.id);
+      setReviews(updatedReviews);
+      setSelectedRating(0);
+      setReviewSuccess('Arvio lähetetty onnistuneesti.');
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      setReviewError(err instanceof Error ? err.message : 'Arvion lähettäminen epäonnistui.');
+    } finally {
+      setIsReviewSubmitting(false);
+    }
+  };
+
+  const handleReviewSignIn = () => {
+    navigate('/auth');
+  };
 
   if (loading) {
     return <div className="space-detail"><p>Ladataan...</p></div>;
@@ -129,16 +237,75 @@ const SpaceDetail: React.FC = () => {
       <div className="space-detail__body">
         <h2 className="space-detail__title">{space.title}</h2>
         <p className="space-detail__location">{space.location}</p>
-        <StarRating count={space.rating} />
+
+        <div className="space-detail__rating-overview">
+          <StarRating
+            value={averageReviewRating}
+            size={20}
+            className="space-detail__stars-rating"
+          />
+          <p className="space-detail__rating-summary">{reviewSummary}</p>
+        </div>
 
         <div className="space-detail__pricing">
           <p className="space-detail__price">{space.price_per_hour} € / tunti</p>
           <p className="space-detail__price space-detail__price--daily">{(space.price_per_day || space.price_per_hour * 24).toFixed(0)} € / päivä</p>
         </div>
 
-        <p className="space-detail__owner">Omistaja: {space.ownerName}</p>
+        <p className="space-detail__owner">Omistaja: {space.ownerName}
+          {space.ownerEmail && (
+            <>
+              {' '}- <button
+                className="space-detail__owner-email"
+                onClick={() => navigate('/messages', { state: { recipientId: space.ownerId } })}
+                style={{ background: 'transparent', border: 'none', color: '#2b9fd6', cursor: 'pointer', padding: 0 }}
+              >{space.ownerEmail}</button>
+            </>
+          )}
+        </p>
 
         <p className="space-detail__desc">{space.description}</p>
+
+        <section className="form-section space-detail__review-form">
+          <h3 className="form-section__title">Arvioi tila</h3>
+          <p className="space-detail__review-note">
+            {isLoggedIn && isUser(user)
+              ? 'Valitse tähtiarvosana ja lähetä se kaikkien nähtäväksi.'
+              : 'Kirjaudu sisään jättääksesi oman arvion tästä tilasta.'}
+          </p>
+
+          {isLoggedIn && isUser(user) ? (
+            <>
+              <StarRating
+                value={selectedRating}
+                interactive
+                size={20}
+                className="space-detail__review-stars"
+                onChange={handleReviewRatingChange}
+              />
+
+              {reviewError && <p className="account-info__message account-info__message--error">{reviewError}</p>}
+              {reviewSuccess && <p className="account-info__message account-info__message--success">{reviewSuccess}</p>}
+
+              <button
+                type="button"
+                className="btn btn--dark"
+                onClick={handleReviewSubmit}
+                disabled={isReviewSubmitting || selectedRating === 0}
+              >
+                {isReviewSubmitting ? 'Lähetetään...' : 'Lähetä arvio'}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--dark"
+              onClick={handleReviewSignIn}
+            >
+              Kirjaudu sisään arvioidaksesi
+            </button>
+          )}
+        </section>
 
         <div className="booking-card">
           {isLoggedIn ? (
@@ -192,7 +359,7 @@ const SpaceDetail: React.FC = () => {
 
                   <div className="booking-card__price-row">
                     <span>{space.price_per_hour} € × {bookingHours} tunti{bookingHours > 1 ? 'a' : ''}</span>
-                    <span>{(space.price_per_hour * bookingHours).toFixed(0)} €</span>
+                    <span>{hourlyTotalPrice.toFixed(0)} €</span>
                   </div>
                 </>
               ) : (
@@ -225,7 +392,7 @@ const SpaceDetail: React.FC = () => {
                   {dayCount > 0 && (
                     <div className="booking-card__price-row">
                       <span>{pricePerDay.toFixed(0)} € × {dayCount} päivä{dayCount > 1 ? 'ä' : ''}</span>
-                      <span>{(pricePerDay * dayCount).toFixed(0)} €</span>
+                      <span>{dailyTotalPrice.toFixed(0)} €</span>
                     </div>
                   )}
                 </>
@@ -263,6 +430,41 @@ const SpaceDetail: React.FC = () => {
                     setConfirmedBooking(result);
                     setBookingStatus('success');
                     setShowSuccessPopup(true);
+
+                    try {
+                      const ownerId = space?.ownerId;
+                      if (ownerId && user) {
+                        const senderId = (user as any).id;
+                        const senderName = isUser(user) ? getUserDisplayName(user) : ((user as any).username || `User ${senderId}`);
+                        const content = `Uusi varauspyyntö (#${result.id}) käyttäjältä ${senderName} tilaan "${space.title}" alkaen ${new Date(result.start_time).toLocaleString('fi-FI')} - ${new Date(result.end_time).toLocaleString('fi-FI')}`;
+                        api.media.sendMessage({ sender_id: senderId, receiver_id: ownerId, content }).catch((e) => console.error('Failed to send owner message', e));
+                        try {
+                          api.media.createNotification({
+                            user_id: ownerId,
+                            type: 'booking',
+                            content,
+                          }).catch((e) =>
+                            console.error('Failed to create owner notification', e)
+                          );
+                        } catch (e) {
+                          console.error('Notification creation call failed:', e);
+                        }
+
+                        try {
+                          window.dispatchEvent(new CustomEvent('booking:created', { detail: result }));
+                        } catch {
+                          try {
+                            const ev = document.createEvent('CustomEvent');
+                            ev.initCustomEvent('booking:created', true, true, result as any);
+                            window.dispatchEvent(ev);
+                          } catch (inner) {
+                            console.error('Failed to dispatch booking event', inner);
+                          }
+                        }
+                      }
+                    } catch (notifyErr) {
+                      console.error('Owner notification failed:', notifyErr);
+                    }
                   } catch (err) {
                     console.error('Booking failed:', err);
                     setBookingStatus('error');
@@ -276,7 +478,7 @@ const SpaceDetail: React.FC = () => {
 
               <p className="booking-card__note">Sinua veloitetaan varauksen vahvistamisen jälkeen</p>
 
-              <button className="booking-card__message" onClick={() => navigate('/messages')}>
+              <button className="booking-card__message" onClick={() => navigate('/messages', { state: { recipientId: space.ownerId } })}>
                 <FiMessageSquare size={16} /> Lähetä viesti
               </button>
             </>
@@ -302,6 +504,7 @@ const SpaceDetail: React.FC = () => {
               <p><strong>Tila:</strong> Odottaa hyväksyntää</p>
             </div>
             <button className="booking-popup__btn" onClick={() => navigate('/bookings')}>Näytä varaukset</button>
+            <button className="booking-popup__btn" onClick={() => navigate('/payment', { state: { bookingId: confirmedBooking.id, amount: totalPrice } })}>Maksa nyt</button>
             <button className="booking-popup__btn booking-popup__btn--secondary" onClick={() => setShowSuccessPopup(false)}>Sulje</button>
           </div>
         </div>
