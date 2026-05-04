@@ -13,11 +13,29 @@ import type {
 } from 'map-hybrid-types-server';
 import type { LoginData, RegisterData } from '../types/localTypes';
 
-const AUTH_API = import.meta.env.VITE_AUTH_API || 'http://localhost:3000/api';
-const MEDIA_API = import.meta.env.VITE_MEDIA_API || 'http://localhost:3001/api';
-const UPLOAD_API = import.meta.env.VITE_UPLOAD_API || 'http://localhost:3002/api';
-const UPLOADS_URL = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:3002/uploads';
-const PAYMENT_API = import.meta.env.VITE_PAYMENT_API || 'http://localhost:3003/api';
+const isProduction = import.meta.env.PROD;
+
+const resolveApiBaseUrl = (
+  envValue: string | undefined,
+  fallback: string,
+  envName: string
+): string => {
+  if (envValue) {
+    return envValue;
+  }
+
+  if (isProduction) {
+    throw new Error(`${envName} is required in production. Set it in your Vercel environment variables.`);
+  }
+
+  return fallback;
+};
+
+const AUTH_API = resolveApiBaseUrl(import.meta.env.VITE_AUTH_API, 'http://localhost:3000/api', 'VITE_AUTH_API');
+const MEDIA_API = resolveApiBaseUrl(import.meta.env.VITE_MEDIA_API, 'http://localhost:3001/api', 'VITE_MEDIA_API');
+const UPLOAD_API = resolveApiBaseUrl(import.meta.env.VITE_UPLOAD_API, 'http://localhost:3002/api', 'VITE_UPLOAD_API');
+const UPLOADS_URL = resolveApiBaseUrl(import.meta.env.VITE_UPLOADS_URL, 'http://localhost:3002/uploads', 'VITE_UPLOADS_URL');
+const PAYMENT_API = resolveApiBaseUrl(import.meta.env.VITE_PAYMENT_API, 'http://localhost:3003/api', 'VITE_PAYMENT_API');
 
 const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken');
