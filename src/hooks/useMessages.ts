@@ -96,10 +96,17 @@ const useMessages = () => {
   useEffect(() => {
     try {
       const st = (location && (location as any).state) || undefined;
-      if (!st?.recipientId) return;
+      const recipientEmail = st?.recipientEmail as string | undefined;
+      const recipientId = st?.recipientId as string | number | undefined;
+
+      if (!recipientEmail && !recipientId) return;
 
       const timer = window.setTimeout(() => {
-        setNewRecipient(String(st.recipientId));
+        if (recipientEmail) {
+          setNewRecipient(recipientEmail);
+        } else {
+          setNewRecipient(String(recipientId));
+        }
         setActiveTab('inbox');
         setIsComposeOpen(true);
       }, 0);
@@ -230,7 +237,32 @@ const useMessages = () => {
     setIsComposeOpen(true);
   };
 
-  const sendMessage = () => {
+  const resolveRecipientId = async (recipient: string): Promise<number | null> => {
+    const trimmedRecipient = recipient.trim();
+
+    if (!trimmedRecipient) {
+      return null;
+    }
+
+    const numericRecipientId = Number(trimmedRecipient);
+    if (Number.isFinite(numericRecipientId) && numericRecipientId > 0) {
+      return numericRecipientId;
+    }
+
+    if (trimmedRecipient.includes('@')) {
+      try {
+        const userByEmail = await api.user.fetchUserProfileByEmail(trimmedRecipient);
+        return userByEmail.id;
+      } catch (err) {
+        console.error('Failed to resolve recipient email:', err);
+        return null;
+      }
+    }
+
+    return null;
+  };
+
+  const sendMessage = async () => {
     if (!input.trim() || !myId) return;
 
     if (openThread) {
@@ -251,7 +283,15 @@ const useMessages = () => {
     }
 
     if (!newRecipient.trim()) return;
-    const recipientId = parseInt(newRecipient.trim(), 10) || 0;
+
+    setError(null);
+
+    const recipientId = await resolveRecipientId(newRecipient);
+    if (!recipientId) {
+      setError('Vastaanottajaa ei löytynyt.');
+      return;
+    }
+
     const content = input.trim();
     setInput('');
     setNewRecipient('');
@@ -271,7 +311,10 @@ const useMessages = () => {
         setRawMessages((prev) => [...prev, sentMsg]);
         setIsComposeOpen(false);
       })
-      .catch(console.error);
+      .catch((sendError) => {
+        console.error(sendError);
+        setError('Viestin lähettäminen epäonnistui.');
+      });
   };
 
   const updateInput = (value: string) => setInput(value);

@@ -22,6 +22,44 @@ type SpaceDetailData = {
   images: string[];
 };
 
+type StoredSpaceOwner = {
+  ownerId: number;
+  ownerUsername: string;
+  ownerName: string;
+  ownerEmail: string;
+};
+
+const getStoredSpaceOwner = (spaceId: number): StoredSpaceOwner | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(`space-owner-${spaceId}`);
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsedValue = JSON.parse(rawValue) as Partial<StoredSpaceOwner>;
+    if (
+      typeof parsedValue.ownerId !== 'number' ||
+      typeof parsedValue.ownerName !== 'string' ||
+      typeof parsedValue.ownerEmail !== 'string'
+    ) {
+      return null;
+    }
+
+    return {
+      ownerId: parsedValue.ownerId,
+      ownerUsername: typeof parsedValue.ownerUsername === 'string' ? parsedValue.ownerUsername : '',
+      ownerName: parsedValue.ownerName,
+      ownerEmail: parsedValue.ownerEmail,
+    };
+  } catch {
+    return null;
+  }
+};
+
 const SpaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -70,23 +108,35 @@ const SpaceDetail: React.FC = () => {
           // no images yet
         }
 
-        let ownerName = '';
-        let ownerEmail = '';
-        const ownerId = (data as any).owner_id ?? (data as any).ownerId;
+        const storedOwner = getStoredSpaceOwner(Number(id));
+        let ownerName = storedOwner?.ownerName || '';
+        let ownerEmail = storedOwner?.ownerEmail || '';
+        let ownerId = storedOwner?.ownerId ?? (data as any).owner_id ?? (data as any).ownerId;
+        const currentOwner = isUser(user) && ownerId === user.id ? user : null;
+
         if ((data as any).owner) {
           const o = (data as any).owner;
-          ownerName = o.username || o.Firstname || o.business_name || ownerName;
-          ownerEmail = o.email || ownerEmail;
+          ownerName = ownerName || o.username || o.Firstname || o.business_name || '';
+          ownerEmail = ownerEmail || o.email || '';
         }
+
         ownerName = ownerName || (data as any).owner_name || (data as any).owner_username || '';
         ownerEmail = ownerEmail || (data as any).owner_email || (data as any).ownerEmail || '';
+        ownerName = ownerName || currentOwner?.Firstname || currentOwner?.username || '';
+        ownerEmail = ownerEmail || currentOwner?.email || '';
 
-        const possibleUsername = (data as any).owner_username || (data as any).owner_name || (data as any).owner?.username;
-        if (!ownerEmail && possibleUsername) {
+        const possibleUsername =
+          storedOwner?.ownerUsername ||
+          (data as any).owner_username ||
+          (data as any).owner_name ||
+          (data as any).owner?.username;
+
+        if (!ownerName || !ownerEmail) {
           try {
-            const ownerProfile = await api.user.fetchUserProfile(possibleUsername);
-            ownerEmail = ownerProfile.email || ownerEmail;
-            ownerName = ownerName || ownerProfile.username || ownerProfile.Firstname || '';
+            const ownerProfile = possibleUsername ? await api.user.fetchUserProfile(possibleUsername) : null;
+            ownerEmail = ownerEmail || ownerProfile?.email || '';
+            ownerName = ownerName || ownerProfile?.Firstname || ownerProfile?.username || '';
+            ownerId = ownerId ?? ownerProfile?.id;
           } catch {
             // ignore profile fetch failures
           }
@@ -169,7 +219,7 @@ const SpaceDetail: React.FC = () => {
         user_id: user.id,
         space_id: space.id,
         rating: selectedRating,
-        comment: '',
+        comment: `Arvio ${selectedRating}/5`,
       });
 
       const updatedReviews = await api.media.fetchReviews(space.id);
@@ -257,7 +307,7 @@ const SpaceDetail: React.FC = () => {
             <>
               {' '}- <button
                 className="space-detail__owner-email"
-                onClick={() => navigate('/messages', { state: { recipientId: space.ownerId } })}
+                onClick={() => navigate('/messages', { state: { recipientEmail: space.ownerEmail } })}
                 style={{ background: 'transparent', border: 'none', color: '#2b9fd6', cursor: 'pointer', padding: 0 }}
               >{space.ownerEmail}</button>
             </>
@@ -478,7 +528,7 @@ const SpaceDetail: React.FC = () => {
 
               <p className="booking-card__note">Sinua veloitetaan varauksen vahvistamisen jälkeen</p>
 
-              <button className="booking-card__message" onClick={() => navigate('/messages', { state: { recipientId: space.ownerId } })}>
+              <button className="booking-card__message" onClick={() => navigate('/messages', { state: { recipientEmail: space.ownerEmail } })}>
                 <FiMessageSquare size={16} /> Lähetä viesti
               </button>
             </>

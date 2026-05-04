@@ -55,8 +55,13 @@ const useCreateSpace = () => {
     setIsSubmitting(true);
     setError(null);
     try {
-      const space = await api.upload.uploadSpace({
+      const ownerName = user.Firstname || user.username;
+
+      const spaceData = {
         owner_id: user.id,
+        owner_name: ownerName,
+        owner_username: user.username,
+        owner_email: user.email,
         category_id: form.category_id ? Number(form.category_id) : undefined,
         title: form.title.trim(),
         description: form.description.trim(),
@@ -64,7 +69,24 @@ const useCreateSpace = () => {
         capacity: Number(form.capacity) || 1,
         price_per_hour: Number(form.price_per_hour),
         ...(form.price_per_day ? { price_per_day: Number(form.price_per_day) } : {}),
-      });
+      };
+
+      const space = await api.upload.uploadSpace(spaceData);
+
+      try {
+        localStorage.setItem(
+          `space-owner-${space.id}`,
+          JSON.stringify({
+            ownerId: user.id,
+            ownerUsername: user.username,
+            ownerName,
+            ownerEmail: user.email,
+          })
+        );
+      } catch {
+        // ignore storage failures
+      }
+
       setCreatedSpaceId(space.id);
       return space.id;
     } catch (err) {

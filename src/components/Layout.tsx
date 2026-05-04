@@ -26,7 +26,7 @@ type SidebarItem = {
 const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isLoggedIn, logout } = useAuth();
+  const { user, isLoggedIn, isLoading, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isProvider = isUser(user) && (user.role === 'provider' || user.role === 'admin');
 
@@ -47,6 +47,31 @@ const Layout: React.FC = () => {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    const protectedPrefixes = [
+      '/messages',
+      '/notifications',
+      '/bookings',
+      '/payment',
+      '/account',
+      '/settings',
+      '/provider',
+      '/upload',
+    ];
+
+    const isProtectedPath = protectedPrefixes.some(
+      (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`)
+    );
+
+    if (!isLoggedIn && isProtectedPath) {
+      navigate('/');
+    }
+  }, [isLoggedIn, isLoading, location.pathname, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -71,68 +96,71 @@ const Layout: React.FC = () => {
       onClick: () => goTo('/search'),
       isActive: location.pathname === '/search',
     },
-    {
-      label: 'Messages',
-      icon: <FiMessageSquare size={18} />,
-      onClick: () => goTo('/messages'),
-      isActive: location.pathname === '/messages',
-    },
-    {
-      label: 'Notifications',
-      icon: <FiBell size={18} />,
-      onClick: () => goTo('/notifications'),
-      isActive: location.pathname === '/notifications',
-    },
-    {
-      label: 'Bookings',
-      icon: <FiCalendar size={18} />,
-      onClick: () => goTo('/bookings'),
-      isActive: location.pathname === '/bookings',
-    },
-    {
-      label: 'Payment history',
-      icon: <FiCalendar size={18} />,
-      onClick: () => goTo('/payment'),
-      isActive: location.pathname === '/payment',
-    },
-    {
-      label: 'Account',
-      icon: <FiUser size={18} />,
-      onClick: () => goTo('/account'),
-      isActive: location.pathname === '/account',
-    },
-    {
-      label: 'Settings',
-      icon: <FiSettings size={18} />,
-      onClick: () => goTo('/settings'),
-      isActive: location.pathname === '/settings',
-    },
   ];
 
-  if (isProvider) {
+  if (isLoggedIn) {
     sidebarItems.push(
       {
-        label: 'Provider home',
-        icon: <FiHome size={18} />,
-        onClick: () => goTo('/provider'),
-        isActive: location.pathname === '/provider',
+        label: 'Messages',
+        icon: <FiMessageSquare size={18} />,
+        onClick: () => goTo('/messages'),
+        isActive: location.pathname === '/messages',
       },
       {
-        label: 'Create space',
-        icon: <FiUpload size={18} />,
-        onClick: () => goTo('/provider/create'),
-        isActive: location.pathname === '/provider/create',
+        label: 'Notifications',
+        icon: <FiBell size={18} />,
+        onClick: () => goTo('/notifications'),
+        isActive: location.pathname === '/notifications',
       },
       {
-        label: 'Upload media',
-        icon: <FiUpload size={18} />,
-        onClick: () => goTo('/upload'),
-        isActive: location.pathname === '/upload' || location.pathname.startsWith('/upload/'),
+        label: 'Bookings',
+        icon: <FiCalendar size={18} />,
+        onClick: () => goTo('/bookings'),
+        isActive: location.pathname === '/bookings',
+      },
+      {
+        label: 'Payment history',
+        icon: <FiCalendar size={18} />,
+        onClick: () => goTo('/payment'),
+        isActive: location.pathname === '/payment',
+      },
+      {
+        label: 'Account',
+        icon: <FiUser size={18} />,
+        onClick: () => goTo('/account'),
+        isActive: location.pathname === '/account',
+      },
+      {
+        label: 'Settings',
+        icon: <FiSettings size={18} />,
+        onClick: () => goTo('/settings'),
+        isActive: location.pathname === '/settings',
       },
     );
-  }
 
-  if (!isLoggedIn) {
+    if (isProvider) {
+      sidebarItems.push(
+        {
+          label: 'Provider home',
+          icon: <FiHome size={18} />,
+          onClick: () => goTo('/provider'),
+          isActive: location.pathname === '/provider',
+        },
+        {
+          label: 'Create space',
+          icon: <FiUpload size={18} />,
+          onClick: () => goTo('/provider/create'),
+          isActive: location.pathname === '/provider/create',
+        },
+        {
+          label: 'Upload media',
+          icon: <FiUpload size={18} />,
+          onClick: () => goTo('/upload'),
+          isActive: location.pathname === '/upload' || location.pathname.startsWith('/upload/'),
+        },
+      );
+    }
+  } else {
     sidebarItems.push(
       {
         label: 'Sign in',
