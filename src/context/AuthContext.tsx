@@ -39,13 +39,14 @@ const AuthProvider = ({ children }: MainUserProviderProps) => {
     checkAuth();
   }, []);
 
-  const loginSuccess = async (loginData: LoginData) => {
+  const loginSuccess = async (loginData: LoginData): Promise<User> => {
     try {
       const response: AuthResponse = await api.auth.Login(loginData);
-      // Use the user returned by the login response directly — no second API call needed
-      setUser(response.user as User);
+      const authenticatedUser = response.user as User;
+      setUser(authenticatedUser);
       setIsAuthenticated(true);
       setError(null);
+      return authenticatedUser;
     } catch (err) {
       console.error('Login failed:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -55,16 +56,18 @@ const AuthProvider = ({ children }: MainUserProviderProps) => {
     }
   };
 
-  const registerSuccess = async (registerData: RegisterData) => {
+  const registerSuccess = async (registerData: RegisterData): Promise<User> => {
     try {
       const response: AuthResponse =
         registerData.role === 'provider'
           ? await api.auth.registerServiceProvider(registerData)
           : await api.auth.registerConsumer(registerData);
 
-      setUser(response.user as User);
+      const authenticatedUser = response.user as User;
+      setUser(authenticatedUser);
       setIsAuthenticated(true);
       setError(null);
+      return authenticatedUser;
     } catch (err) {
       console.error('Register failed:', err);
       setError(err instanceof Error ? err.message : 'Registration failed');

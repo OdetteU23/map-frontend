@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 import { useAuth } from '../context/AuthContext';
-import { isUser } from '../helpers/types/localTypes';
 
 type UserType = 'normal' | 'business';
 
@@ -11,17 +10,13 @@ const AuthPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isLoginView = searchParams.get('view') === 'login';
   const [userType, setUserType] = useState<UserType>('normal');
-  const { user, isLoading, error, clearError, loginSuccess, registerSuccess } = useAuth();
+  const { isLoading, error, clearError, loginSuccess, registerSuccess } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (username: string, password: string | number) => {
     try {
-      await loginSuccess({ username, password });
-      if (isUser(user)) {
-        navigate(user.role === 'provider' || user.role === 'admin' ? '/provider' : '/home');
-      } else {
-        navigate('/home');
-      }
+      const authenticatedUser = await loginSuccess({ username, password });
+      navigate(authenticatedUser.role === 'provider' || authenticatedUser.role === 'admin' ? '/provider' : '/home');
     } catch {
       // Error is already set in AuthContext; stay on auth page
     }
@@ -36,8 +31,8 @@ const AuthPage: React.FC = () => {
   ) => {
     try {
       const role = userType === 'business' ? 'provider' : 'consumer';
-      await registerSuccess({ Firstname, Lastname, email, username, password, role });
-      navigate(role === 'provider' ? '/provider' : '/home');
+      const authenticatedUser = await registerSuccess({ Firstname, Lastname, email, username, password, role });
+      navigate(authenticatedUser.role === 'provider' || authenticatedUser.role === 'admin' ? '/provider' : '/home');
     } catch {
       // Error is already set in AuthContext; stay on auth page
     }

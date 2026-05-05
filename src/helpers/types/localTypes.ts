@@ -36,8 +36,8 @@ type AuthContextType = {
   isLoggedIn: boolean;
   isLoading: boolean;
   error: string | null;
-  loginSuccess: (loginData: LoginData) => Promise<void>;
-  registerSuccess: (registerData: RegisterData) => Promise<void>;
+  loginSuccess: (loginData: LoginData) => Promise<User>;
+  registerSuccess: (registerData: RegisterData) => Promise<User>;
   logout: () => void;
   clearError: () => void;
   editUser: (updatedData: Partial<User | ServiceProviderProfile>) => void;
