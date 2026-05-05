@@ -162,7 +162,7 @@ const SpaceDetail: React.FC = () => {
     };
 
     loadSpace();
-  }, [id]);
+  }, [id, user]);
 
   useEffect(() => {
     setSelectedRating(0);
@@ -187,7 +187,7 @@ const SpaceDetail: React.FC = () => {
     };
 
     loadReviews();
-  }, [space?.title]);
+  }, [space?.id, space?.title]);
 
   const handleReviewRatingChange = (nextRating: number) => {
     setSelectedRating(nextRating);
