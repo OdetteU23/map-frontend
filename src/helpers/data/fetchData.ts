@@ -101,10 +101,12 @@ async function fetching<T>(
 
 const authApi = {
   Register: async (userData: RegisterData | Partial<UserRole>) => {
-    const role = 'role' in userData && userData.role ? userData.role : 'consumer';
-    const response = await fetching<AuthResponse>(AUTH_API, `/auth/register/${role}`, {
+    const response = await fetching<AuthResponse>(AUTH_API, '/auth/register/consumer', {
       method: 'POST',
-      body: JSON.stringify(userData),
+      body: JSON.stringify({
+        ...(userData as RegisterData),
+        role: 'consumer',
+      }),
     });
     localStorage.setItem('authToken', response.accessToken);
     return response;

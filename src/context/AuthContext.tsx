@@ -57,8 +57,11 @@ const AuthProvider = ({ children }: MainUserProviderProps) => {
 
   const registerSuccess = async (registerData: RegisterData) => {
     try {
-      const response: AuthResponse = await api.auth.Register(registerData);
-      // Use the user returned by the register response directly — no second API call needed
+      const response: AuthResponse =
+        registerData.role === 'provider'
+          ? await api.auth.registerServiceProvider(registerData)
+          : await api.auth.registerConsumer(registerData);
+
       setUser(response.user as User);
       setIsAuthenticated(true);
       setError(null);
