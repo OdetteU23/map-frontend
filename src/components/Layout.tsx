@@ -191,12 +191,20 @@ const Layout: React.FC = () => {
           <FiMenu />
         </button>
 
-        <h1
-          className="header__title"
+        <button
+          type="button"
+          className="header__brand"
           onClick={handleHome}
+          aria-label="UscopeX home"
         >
-          USX Marketplace
-        </h1>
+          <div className="header__logo-box">
+            <img
+              className="header__logo"
+              src="/A%20letter%20Logo%20design%20%281%29.svg"
+              alt="UscopeX Marketplace"
+            />
+          </div>
+        </button>
 
         <nav className="header__nav" aria-label="Primary navigation">
           <button

@@ -37,12 +37,40 @@
   align-items: center;
 }
 
-.header__title {
-  font-family: var(--usx-font-heading);
-  font-style: italic;
-  font-size: 19px;
-  margin: 0;
+.header__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+.header__logo-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(60px, 10vw, 68px);
+  height: clamp(60px, 10vw, 68px);
+  padding: 0.35rem;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.header__logo {
+  display: block;
+  width: 145%;
+  height: 145%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
 }
 
 /* Desktop header nav */
