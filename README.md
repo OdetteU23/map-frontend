@@ -85,6 +85,40 @@
 
 17. **Shared TypeScript data types** — Integration with the shared `map-hybrid-types-server` package for typed users, spaces, bookings, messages, notifications, reviews, payments, categories, and uploaded media.
 
+## Prototypes image of the app:
+
+**adminsHomeView:** ![adminsHomeView](prototypeImages/adminsHomeView.png)
+
+**Authenticated_ClientsHomeView:** ![Authenticated_ClientsHomeView](prototypeImages/Authenticated_ClientsHomeView.png)
+
+**BookingPopUp:** ![BookingPopUp](prototypeImages/BookingPopUp.png)
+
+**ClientsAccountView:** ![ClientsAccountView](prototypeImages/ClientsAccountView.png)
+
+**Payments:** ![Payments](prototypeImages/Payments.png)
+
+**PaymentsView:** ![PaymentsView](prototypeImages/PaymentsView.png)
+
+**PublicHomeView:** ![PublicHomeView](prototypeImages/PublicHomeView.png)
+
+**PublicSideBar:** ![PublicSideBar](prototypeImages/PublicSideBar.png)
+
+**RatingandBookingView:** ![RatingandBookingView](prototypeImages/RatingandBookingView.png)
+
+**RegisterForm:** ![RegisterForm](prototypeImages/RegisterForm.png)
+
+**SearchView:** ![SearchView](prototypeImages/SearchView.png)
+
+**ServiceProvidersOwnservices:** ![ServiceProvidersOwnservices](prototypeImages/ServiceProvidersOwnservices.png)
+
+**settings:** ![settings](prototypeImages/settings.png)
+
+**SidebarforAuthenticatedClients:** ![SidebarforAuthenticatedClients](prototypeImages/SidebarforAuthenticatedClients.png)
+
+**Singleview:** ![Singleview](prototypeImages/Singleview.png)
+
+**UploadView:** ![UploadView](prototypeImages/UploadView.png)
+
 ## Installing/updating the shared types package in all servers by running:
 - npm install OdetteU23/map-hybridi-types
 - npm install OdetteU23/map-hybridi-types --save
