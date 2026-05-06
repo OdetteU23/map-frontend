@@ -67,6 +67,26 @@ export type SpaceCreatePayload = Partial<Space> & {
   owner_email: string;
 };
 
+const normalizeBaseUrl = (baseUrl: string): string => {
+  return baseUrl.replace(/\/$/, '');
+};
+
+const stripUploadSuffix = (baseUrl: string): string => {
+  return normalizeBaseUrl(baseUrl)
+    .replace(/\/api\/uploads$/, '')
+    .replace(/\/uploads$/, '')
+    .replace(/\/api$/, '');
+};
+
+const getUploadBaseCandidates = (): string[] => {
+  const origin = stripUploadSuffix(UPLOAD_API);
+  return Array.from(new Set([
+    `${origin}/api/uploads`,
+    `${origin}/uploads`,
+    `${origin}/api/api/uploads`,
+  ]));
+};
+
 async function fetching<T>(
   baseUrl: string,
   endpoint: string,
@@ -97,6 +117,57 @@ async function fetching<T>(
     console.error('API Error:', error);
     throw error;
   }
+}
+
+async function fetchingWithFallback<T>(
+  baseUrls: string[],
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  let lastError: unknown = null;
+
+  for (let index = 0; index < baseUrls.length; index += 1) {
+    const baseUrl = baseUrls[index];
+    try {
+      const isFormData = options.body instanceof FormData;
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        ...options,
+        headers: {
+          ...getAuthHeader(isFormData),
+          ...options.headers,
+        },
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+
+      const contentType = response.headers.get('content-type');
+      const fallbackMessage = `HTTP error! status: ${response.status}`;
+      const errorMessage =
+        contentType && contentType.includes('application/json')
+          ? await response.json().then((error) => error.message || error.error || fallbackMessage)
+          : fallbackMessage;
+
+      if (response.status === 404 && index < baseUrls.length - 1) {
+        lastError = new Error(errorMessage);
+        continue;
+      }
+
+      throw new Error(errorMessage);
+    } catch (error) {
+      lastError = error;
+      if (index < baseUrls.length - 1) {
+        continue;
+      }
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+
+  throw new Error('Upload request failed');
 }
 
 const authApi = {
@@ -350,27 +421,27 @@ const uploadApi = {
     formData.append('image', file);
     if (listingId != null) formData.append('listing_id', String(listingId));
 
-    return fetching<ListingImages>(UPLOAD_API, '/uploads/upload', {
+    return fetchingWithFallback<ListingImages>(getUploadBaseCandidates(), '/upload', {
       method: 'POST',
       body: formData,
     });
   },
 
   fetchImagesByListing: async (listingId: number): Promise<ListingImages[]> => {
-    return fetching<ListingImages[]>(UPLOAD_API, `/uploads/listing/${listingId}`, {
+    return fetchingWithFallback<ListingImages[]>(getUploadBaseCandidates(), `/listing/${listingId}`, {
       method: 'GET',
     });
   },
 
   updateImage: async (imageId: number, imageData: Partial<ListingImages>): Promise<ListingImages> => {
-    return fetching<ListingImages>(UPLOAD_API, `/uploads/edit/${imageId}`, {
+    return fetchingWithFallback<ListingImages>(getUploadBaseCandidates(), `/edit/${imageId}`, {
       method: 'PUT',
       body: JSON.stringify(imageData),
     });
   },
 
   deleteImage: async (imageId: number): Promise<void> => {
-    await fetching<void>(UPLOAD_API, `/uploads/delete/${imageId}`, {
+    await fetchingWithFallback<void>(getUploadBaseCandidates(), `/delete/${imageId}`, {
       method: 'DELETE',
     });
   },

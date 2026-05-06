@@ -1,5 +1,13 @@
 # The Frontend of UscopeX marketplace (USX & M) project
 
+## Test User Credentials
+
+| Field | Value |
+|---|---|
+| Name | Odetteu|
+| Username | Odetteu |
+| Password | 1234567 |
+
 ## Frontend server's architecture and tech stack
 
 ### Architecture:
