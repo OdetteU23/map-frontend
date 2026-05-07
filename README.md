@@ -2,9 +2,10 @@
 
 ## Test User Credentials
 
-| Field | Value | Role|
-|---|---|---|
-| Name | Odetteu| Business Owner (Service Provider)
+| Field | Value |
+|---|---|
+| Role | Business Owner (Service Provider) |
+| Name | Odetteu|
 | Username | Odetteu |
 | Password | 1234567 |
 
