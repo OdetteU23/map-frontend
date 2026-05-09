@@ -28,7 +28,11 @@ const UserHome: React.FC = () => {
               ]);
               reviews = fetchedReviews;
               if (images.length > 0) {
-                image = api.getUploadUrl(images[0].image_url);
+                image =
+                  typeof images[0].image_url === 'string' &&
+                  images[0].image_url.startsWith('http')
+                    ? images[0].image_url
+                    : api.getUploadUrl(images[0].image_url);
               }
             } catch {
               // keep the card visible even if images or reviews fail

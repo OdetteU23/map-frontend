@@ -71,6 +71,11 @@ const normalizeBaseUrl = (baseUrl: string): string => {
   return baseUrl.replace(/\/$/, '');
 };
 
+const PAYMENT_API_BASE = (() => {
+  const normalized = normalizeBaseUrl(PAYMENT_API);
+  return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+})();
+
 const stripUploadSuffix = (baseUrl: string): string => {
   return normalizeBaseUrl(baseUrl)
     .replace(/\/api\/uploads$/, '')
@@ -209,7 +214,7 @@ const authApi = {
   },
 
   fetchPaymentsHistory: async (username: string): Promise<Payment[]> => {
-    return fetching<Payment[]>(PAYMENT_API, `/payments/history/${encodeURIComponent(username)}`, {
+    return fetching<Payment[]>(PAYMENT_API_BASE, `/payments/history/${encodeURIComponent(username)}`, {
       method: 'GET',
     });
   },
@@ -239,41 +244,41 @@ const authApi = {
     user_id: number;
     payment_method?: string;
   }): Promise<{ clientSecret: string; payment: Payment }> => {
-    return fetching<{ clientSecret: string; payment: Payment }>(PAYMENT_API, '/payments/create-intent', {
+    return fetching<{ clientSecret: string; payment: Payment }>(PAYMENT_API_BASE, '/payments/create-intent', {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });
   },
 
   createPayment: async (paymentData: Partial<Payment>): Promise<Payment> => {
-    return fetching<Payment>(PAYMENT_API, '/payments/create-intent', {
+    return fetching<Payment>(PAYMENT_API_BASE, '/payments/create-intent', {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });
   },
 
   getPaymentToken: async (paymentData: Partial<Payment>): Promise<TokenMessages> => {
-    return fetching<TokenMessages>(PAYMENT_API, '/payments/create-intent', {
+    return fetching<TokenMessages>(PAYMENT_API_BASE, '/payments/create-intent', {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });
   },
 
   updatePaymentStatus: async (paymentId: number, status: string): Promise<Payment> => {
-    return fetching<Payment>(PAYMENT_API, `/payments/update/${paymentId}`, {
+    return fetching<Payment>(PAYMENT_API_BASE, `/payments/update/${paymentId}`, {
       method: 'PUT',
       body: JSON.stringify({ payment_status: status }),
     });
   },
 
   cancelPayment: async (paymentId: number): Promise<Payment> => {
-    return fetching<Payment>(PAYMENT_API, `/payments/cancel/${paymentId}`, {
+    return fetching<Payment>(PAYMENT_API_BASE, `/payments/cancel/${paymentId}`, {
       method: 'POST',
     });
   },
 
   refundPayment: async (paymentId: number): Promise<Payment> => {
-    return fetching<Payment>(PAYMENT_API, `/payments/refund/${paymentId}`, {
+    return fetching<Payment>(PAYMENT_API_BASE, `/payments/refund/${paymentId}`, {
       method: 'POST',
     });
   },

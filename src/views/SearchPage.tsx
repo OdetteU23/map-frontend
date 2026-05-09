@@ -29,7 +29,11 @@ const SearchPage: React.FC = () => {
               reviews = fetchedReviews;
 
               if (images.length > 0) {
-                image = api.getUploadUrl(images[0].image_url);
+                image =
+                  typeof images[0].image_url === 'string' &&
+                  images[0].image_url.startsWith('http')
+                    ? images[0].image_url
+                    : api.getUploadUrl(images[0].image_url);
               }
             } catch {
               // keep the card visible even if images or reviews fail
@@ -64,7 +68,12 @@ const SearchPage: React.FC = () => {
               const imgs = await api.upload.fetchImagesByListing(card.space.id);
               return {
                 ...card,
-                image: imgs.length > 0 ? api.getUploadUrl(imgs[0].image_url) : undefined,
+                image:
+                  imgs.length > 0
+                    ? typeof imgs[0].image_url === 'string' && imgs[0].image_url.startsWith('http')
+                      ? imgs[0].image_url
+                      : api.getUploadUrl(imgs[0].image_url)
+                    : undefined,
               };
             } catch {
               return card;
