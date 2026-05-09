@@ -133,3 +133,12 @@
 
 ## The package can be imported e.g:
 - import { User, Space, Category, ... } from 'map-hybrid-types-server';
+
+## Tutorials:
+- **Figma design --> Prototype:** https://www.youtube.com/watch?v=1ucLq6JTxac&t=45s
+- **Stripe:** https://medium.com/@msmt0452/comprehensive-guide-to-payment-gateways-with-react-84c8880f19ac
+- **Stripe docs:** https://docs.stripe.com/development
+- **AWS S3 Bucket:** https://aws.amazon.com/video/watch/5c76e13b7fe/ 
+- **PostGresql initialization script:** https://www.youtube.com/watch?v=AjNB-yBM5so
+- **Redis:** https://www.geeksforgeeks.org/system-design/complete-guide-of-redis-scripting/
+- **S3 Client SDK:** https://www.npmjs.com/package/@aws-sdk/client-s3?activeTab=readme
