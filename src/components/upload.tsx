@@ -2,6 +2,7 @@
 import React from 'react';
 import type { ListingImages } from 'map-hybrid-types-server';
 import { FaCamera } from 'react-icons/fa';
+import { api } from '../helpers/data/fetchData';
 
 //  Image Gallery (viewer + modal) 
 
@@ -38,7 +39,11 @@ const ImageUploading: React.FC<ImageGalleryProps> = ({
               onClick={() => onSelectImage(image)}
             >
               <img
-                src={image.image_url}
+                src={
+                  typeof image.image_url === 'string' && image.image_url.startsWith('http')
+                    ? image.image_url
+                    : api.getUploadUrl(image.image_url)
+                }
                 alt={image.description || 'Image'}
                 loading="lazy"
               />
@@ -54,7 +59,11 @@ const ImageUploading: React.FC<ImageGalleryProps> = ({
               &times;
             </button>
             <img
-              src={selectedImage.image_url}
+              src={
+                typeof selectedImage.image_url === 'string' && selectedImage.image_url.startsWith('http')
+                  ? selectedImage.image_url
+                  : api.getUploadUrl(selectedImage.image_url)
+              }
               alt={selectedImage.description || 'Image'}
             />
             {selectedImage.description && (
