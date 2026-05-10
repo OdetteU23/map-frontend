@@ -6,6 +6,7 @@ import type { SpaceCardProps } from '../helpers/types/localTypes';
 import { api } from '../helpers/data/fetchData';
 import type { Review } from 'map-hybrid-types-server';
 import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
+import { toUploadServerImageUrl } from '../helpers/mediaUrl';
 
 const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -29,11 +30,7 @@ const SearchPage: React.FC = () => {
               reviews = fetchedReviews;
 
               if (images.length > 0) {
-                image =
-                  typeof images[0].image_url === 'string' &&
-                  images[0].image_url.startsWith('http')
-                    ? images[0].image_url
-                    : api.getUploadUrl(images[0].image_url);
+                image = toUploadServerImageUrl(images[0].image_url);
               }
             } catch {
               // keep the card visible even if images or reviews fail
@@ -70,9 +67,7 @@ const SearchPage: React.FC = () => {
                 ...card,
                 image:
                   imgs.length > 0
-                    ? typeof imgs[0].image_url === 'string' && imgs[0].image_url.startsWith('http')
-                      ? imgs[0].image_url
-                      : api.getUploadUrl(imgs[0].image_url)
+                    ? toUploadServerImageUrl(imgs[0].image_url)
                     : undefined,
               };
             } catch {

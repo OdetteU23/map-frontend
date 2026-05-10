@@ -8,6 +8,7 @@ import { api } from '../helpers/data/fetchData';
 import type { Bookings, Review } from 'map-hybrid-types-server';
 import StarRating from '../components/StarRating';
 import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
+import { toUploadServerImageUrl } from '../helpers/mediaUrl';
 
 type SpaceDetailData = {
   id: number;
@@ -103,13 +104,9 @@ const SpaceDetail: React.FC = () => {
         let images: string[] = [];
         try {
           const imgs = await api.upload.fetchImagesByListing(Number(id));
-          images = imgs.map((img) => {
-            // New flow: backend stores full S3 URL in image_url
-            // Old flow: backend stored only filename, so we need /uploads/<filename>
-            return typeof img.image_url === 'string' && img.image_url.startsWith('http')
-              ? img.image_url
-              : api.getUploadUrl(img.image_url);
-          });
+            images = imgs.map((img) => toUploadServerImageUrl(img.image_url)).filter(
+              (url): url is string => typeof url === 'string'
+            );
         } catch {
           // no images yet
         }
