@@ -7,6 +7,7 @@ import { getUserDisplayName } from '../helpers/types/localTypes';
 import { api } from '../helpers/data/fetchData';
 import type { Review } from 'map-hybrid-types-server';
 import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
+import { toUploadServerImageUrl } from '../helpers/mediaUrl';
 
 const UserHome: React.FC = () => {
   const { user } = useAuth();
@@ -28,11 +29,7 @@ const UserHome: React.FC = () => {
               ]);
               reviews = fetchedReviews;
               if (images.length > 0) {
-                image =
-                  typeof images[0].image_url === 'string' &&
-                  images[0].image_url.startsWith('http')
-                    ? images[0].image_url
-                    : api.getUploadUrl(images[0].image_url);
+                image = toUploadServerImageUrl(images[0].image_url);
               }
             } catch {
               // keep the card visible even if images or reviews fail

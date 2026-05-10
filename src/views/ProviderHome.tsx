@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../helpers/data/fetchData';
 import type { Review } from 'map-hybrid-types-server';
 import { calculateAverageReviewRating, formatReviewSummary } from '../helpers/reviewStats';
+import { toUploadServerImageUrl } from '../helpers/mediaUrl';
 
 type Tab = 'all' | 'mine';
 
@@ -33,11 +34,7 @@ const ProviderHome: React.FC = () => {
           reviews = fetchedReviews;
 
           if (images.length > 0) {
-            image =
-              typeof images[0].image_url === 'string' &&
-              images[0].image_url.startsWith('http')
-                ? images[0].image_url
-                : api.getUploadUrl(images[0].image_url);
+            image = toUploadServerImageUrl(images[0].image_url);
           }
         } catch {
           // keep cards visible even if review or image loading fails
