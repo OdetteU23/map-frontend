@@ -4,7 +4,7 @@ import { isUser } from '../helpers/types/localTypes';
 import { api } from '../helpers/data/fetchData';
 import type { Bookings, Space } from 'map-hybrid-types-server';
 
-type BookingStatusAction = 'approved' | 'rejected' | 'canceled';
+type BookingStatusAction = 'approved' | 'rejected' | 'cancelled';
 type BookingRecord = Bookings & {
   created_at?: string | Date;
   space_id?: number | string;
@@ -16,7 +16,7 @@ const BOOKING_NOTIFICATION_TYPE = 'booking' as const;
 const bookingStatusLabel: Record<BookingStatusAction, string> = {
   approved: 'hyväksytty',
   rejected: 'hylätty',
-  canceled: 'peruttu',
+  cancelled: 'peruttu',
 };
 
 const toNumericId = (value: unknown): number | null => {
@@ -192,7 +192,7 @@ const useBookings = (enabled = true) => {
   );
 
   const cancelBooking = useCallback(
-    async (booking: Bookings) => changeBookingStatus(booking, 'canceled'),
+    async (booking: Bookings) => changeBookingStatus(booking, 'cancelled'),
     [changeBookingStatus],
   );
 
