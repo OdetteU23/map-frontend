@@ -4,10 +4,29 @@
 
 | Field | Value |
 |---|---|
-| Role | Business Owner (Service Provider) |
+| Role | admin |
 | Name | Odetteu|
 | Username | Odetteu |
 | Password | 1234567 |
+
+| Field | Value |
+|---|---|
+| Role | Business Owner (Service Provider) |
+| Name | Alvin|
+| Username | Alvine |
+| Password | 1234567 |
+
+| Field | Value |
+|---|---|
+| Role | Client |
+| Name | Olive|
+| Username | Oliveam |
+| Password | 1234567 |
+
+### Bank card Testing
+- ** Card number:** 4242 4242 4242 4242
+- ** Date:** 12/34
+- ** CVC:** 131
 
 ## Frontend server's architecture and tech stack
 
